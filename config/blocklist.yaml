@@ -1,0 +1,19 @@
+﻿risky_domains:
+  - youtube.com
+  - youtu.be
+  - twitch.tv
+  - reddit.com
+  - instagram.com
+  - x.com
+
+risky_processes:
+  - steam.exe
+  - epicgameslauncher.exe
+  - riotclientservices.exe
+  - battle.net.exe
+
+allowed_contexts:
+  - rest day
+  - intentional rest
+  - educational use if explicitly marked
+  - work-related reference if current block allows research

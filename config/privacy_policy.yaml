@@ -1,0 +1,21 @@
+﻿collect:
+  - timestamp
+  - active_process_name
+  - active_window_title
+  - browser_domain
+  - current_plan_block
+  - mismatch_type
+  - user_decision
+  - recovery_duration
+  - false_positive
+
+never_collect:
+  - keystrokes
+  - screenshots
+  - browser_page_body
+  - private_message_body
+  - password_or_secret_text
+
+storage:
+  sqlite: data/state.db
+  jsonl_events: data/events

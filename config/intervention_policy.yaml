@@ -1,0 +1,29 @@
+﻿cooldown_minutes: 15
+max_interventions_per_hour: 3
+
+escalation_levels:
+  green: "gentle notice"
+  yellow: "friction and confirmation"
+  red: "stronger block during high-risk periods only"
+
+exception_categories:
+  - intentional_rest
+  - fatigue
+  - health
+  - emergency
+  - sensory_overload
+  - emotional_overload
+  - schedule_change
+  - false_positive
+
+shame_safe_language_rules:
+  forbidden_terms:
+    - "실패"
+    - "위반"
+    - "벌점"
+    - "의지 부족"
+    - "게으름"
+  preferred_phrases:
+    - "현재 계획과 감지된 활동이 어긋났습니다."
+    - "지금 어떻게 처리할까요?"
+    - "시스템 조정 제안으로 남깁니다."
