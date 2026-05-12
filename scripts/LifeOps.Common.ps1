@@ -1,4 +1,4 @@
-﻿Set-StrictMode -Version Latest
+Set-StrictMode -Version Latest
 
 function Get-LifeOpsRepoRoot {
     return (Resolve-Path (Join-Path $PSScriptRoot '..')).Path
@@ -12,6 +12,21 @@ function Get-LifeOpsPowerShell {
     throw 'PowerShell executable not found.'
 }
 
+function Assert-LifeOpsPythonVersion {
+    param(
+        [Parameter(Mandatory=$true)][string]$PythonPath
+    )
+
+    $global:LASTEXITCODE = 0
+    $version = & $PythonPath -c "import sys; print(f'{sys.version_info.major}.{sys.version_info.minor}.{sys.version_info.micro}'); raise SystemExit(0 if sys.version_info >= (3, 12) else 1)" 2>$null
+    $exitCode = $global:LASTEXITCODE
+    if ($exitCode -ne 0) {
+        if (-not $version) { $version = 'unknown' }
+        throw "Python 3.12+ is required; found $version at $PythonPath."
+    }
+    return $version
+}
+
 function Get-LifeOpsPythonCommand {
     if ($env:LIFEOPS_PYTHON -and (Test-Path -LiteralPath $env:LIFEOPS_PYTHON)) {
         return $env:LIFEOPS_PYTHON
@@ -22,11 +37,17 @@ function Get-LifeOpsPythonCommand {
         if ($cmd) { return $cmd.Source }
     }
 
-    $commonRoots = @(
-        Join-Path $env:LOCALAPPDATA 'Programs\Python',
-        $env:ProgramFiles,
-        ${env:ProgramFiles(x86)}
-    ) | Where-Object { $_ -and (Test-Path -LiteralPath $_) }
+    $commonRoots = @()
+    if ($env:LOCALAPPDATA) {
+        $commonRoots += (Join-Path $env:LOCALAPPDATA 'Programs\Python')
+    }
+    if ($env:ProgramFiles) {
+        $commonRoots += $env:ProgramFiles
+    }
+    if (${env:ProgramFiles(x86)}) {
+        $commonRoots += ${env:ProgramFiles(x86)}
+    }
+    $commonRoots = $commonRoots | Where-Object { $_ -and (Test-Path -LiteralPath $_) }
 
     foreach ($base in $commonRoots) {
         $candidate = Get-ChildItem -LiteralPath $base -Filter python.exe -Recurse -ErrorAction SilentlyContinue |
@@ -56,13 +77,16 @@ function Initialize-LifeOpsEnvironment {
 
     if (-not (Test-Path -LiteralPath $venvPython)) {
         $python = Get-LifeOpsPythonCommand
-        Write-LifeOpsLog "Creating Python virtual environment with $python."
+        $version = Assert-LifeOpsPythonVersion -PythonPath $python
+        Write-LifeOpsLog "Creating Python virtual environment with $python (version $version)."
         & $python -m venv $venv
         if ($LASTEXITCODE -ne 0 -or -not (Test-Path -LiteralPath $venvPython)) {
             throw 'Failed to create Python virtual environment.'
         }
     }
 
+    $version = Assert-LifeOpsPythonVersion -PythonPath $venvPython
+    Write-LifeOpsLog "Using LifeOps Python environment $venvPython (version $version)."
     $env:LIFEOPS_REPO_ROOT = $root
     $env:PYTHONPATH = Join-Path $root 'src'
     return $venvPython

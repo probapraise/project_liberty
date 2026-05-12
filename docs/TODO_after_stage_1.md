@@ -21,9 +21,12 @@
 - decision logging 기본 CLI
 - 선택지 코드 기반 decision logging UX
 - 휴식/피로/건강/과부하/계획 수정 선택을 exception 기록과 연결
+- watcher/dispatcher 1회 실행 옵션
+- startup flow self-check 스크립트
 
 남음:
 - 반복 개입 UX 다듬기
+- 사용자 PowerShell에서 startup self-check 실행 결과 확인
 - 실제 로그인 자동 시작 환경에서 watcher/dispatcher end-to-end 점검
 
 ## Stage 3

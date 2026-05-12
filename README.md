@@ -26,7 +26,7 @@ LifeOps Codex Operator는 Codex CLI/Codex app을 생활 운영 보조자로 사�
 - dispatcher는 pending event를 루멘 intervention prompt로 렌더링하고 Codex intervention 창으로 전달한다.
 - decision logging은 선택지 코드 기반으로 기록하며, 휴식/피로/건강/과부하/계획 수정은 예외 기록과 연결된다.
 
-Codex intervention prompt dispatch와 decision logging 기본 UX는 구현되었다. 다음 Stage 2 작업은 실제 로그인 자동 시작 환경에서 watcher/dispatcher end-to-end를 점검하는 것이다.
+Codex intervention prompt dispatch, decision logging 기본 UX, startup flow self-check 스크립트가 구현되었다. 다음 Stage 2 작업은 사용자의 일반 PowerShell에서 self-check를 실행하고 예약 작업을 실제 로그온 환경에서 확인하는 것이다.
 
 현재 상태와 다음 작업 목록은 [current_status_and_roadmap.md](docs/current_status_and_roadmap.md)를 기준으로 한다.
 
@@ -37,6 +37,16 @@ PowerShell에서 저장소 루트로 이동한 뒤 실행한다.
 ```powershell
 pwsh -ExecutionPolicy Bypass -File .\scripts\Start-LifeOps.ps1
 ```
+
+## Startup flow 점검
+
+장시간 프로세스를 띄우지 않고 부팅 경로를 점검한다.
+
+```powershell
+pwsh -ExecutionPolicy Bypass -File .\scripts\Test-StartupFlow.ps1 -CheckScheduledTask
+```
+
+이 스크립트는 DB 초기화, boot context/prompt 생성, watcher 1회 실행, dispatcher dry-run 1회 실행, Codex CLI/예약 작업 확인 결과를 `data/runtime/startup_check.json`에 남긴다.
 
 ## 자동 시작 설치
 

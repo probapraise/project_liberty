@@ -122,6 +122,8 @@ LifeOps Codex Operator는 사용자의 별도 AI 앱이 아니라, Codex CLI/Cod
 - Codex intervention 창 실행 브리지
 - dispatch 중복 방지용 `dispatching` 상태 전환
 - Stage 2 활동/dispatcher 테스트 추가
+- watcher/dispatcher 1회 실행 옵션 추가
+- startup flow self-check 스크립트 추가
 
 주요 파일:
 
@@ -135,7 +137,7 @@ LifeOps Codex Operator는 사용자의 별도 AI 앱이 아니라, Codex CLI/Cod
 - `tests/test_stage2_activity.py`
 - `tests/test_stage2_dispatcher.py`
 
-현재 watcher는 감지와 기록을 하고, dispatcher는 pending 이벤트를 루멘 intervention prompt로 만들어 Codex 창으로 전달한다. 사용자의 응답은 고정 선택지 코드로 기록되며, 휴식/피로/건강/과부하/계획 수정은 예외 기록과 연결된다. 남은 Stage 2 핵심은 실제 로그인 자동 시작 환경에서 전체 루프를 점검하는 것이다.
+현재 watcher는 감지와 기록을 하고, dispatcher는 pending 이벤트를 루멘 intervention prompt로 만들어 Codex 창으로 전달한다. 사용자의 응답은 고정 선택지 코드로 기록되며, 휴식/피로/건강/과부하/계획 수정은 예외 기록과 연결된다. startup flow self-check 스크립트도 추가되어 긴 실행 없이 DB 초기화, boot prompt 생성, watcher 1회, dispatcher dry-run 1회를 확인할 수 있다. 남은 Stage 2 핵심은 사용자의 일반 PowerShell과 실제 Windows 로그인 환경에서 결과를 확인하는 것이다.
 
 ### 오퍼레이터 persona 완료
 
@@ -156,6 +158,7 @@ LifeOps Codex Operator는 사용자의 별도 AI 앱이 아니라, Codex CLI/Cod
 4. `5d39086 Define LifeOps operator persona`
 5. `4742b1c Document current status and roadmap`
 6. `2952b8b Implement intervention dispatcher`
+7. `a25a3ba Improve intervention decision logging`
 
 이 문서 이후의 최신 커밋은 `git log --oneline`으로 확인한다. 앞으로도 기능이 완성될 때마다 의미 단위로 로컬 커밋을 만들고, 사용자가 직접 `git push origin main`을 실행한다.
 
@@ -180,6 +183,7 @@ Windows 로그인 후 Start-LifeOps가 watcher, dispatcher, Codex boot briefing�
 - `Install-StartupTask.ps1` 실제 등록 테스트
 - task scheduler 동작 확인
 - watcher/dispatcher pid 파일 확인
+- `Test-StartupFlow.ps1 -CheckScheduledTask` self-check 결과 확인
 - boot prompt 생성 확인
 - Codex CLI 실행 경로 확인
 - 로그 파일 회전 또는 크기 제한 검토
@@ -288,11 +292,11 @@ Codex가 LifeOps 상태를 더 안정적으로 읽고 기록할 수 있는 tool 
 시작 순서:
 
 1. 사용자 PowerShell에서 Python 3.12+와 Codex CLI 경로를 확인한다
-2. `scripts/Start-LifeOps.ps1`를 수동 실행한다
-3. watcher/dispatcher pid 파일과 runtime 로그를 확인한다
-4. `Run-Watcher.ps1`와 `Run-EventDispatcher.ps1 -DryRun`으로 안전한 end-to-end 점검을 한다
-5. pending event 생성 -> prompt 생성 -> decision 기록까지 한 번 수동으로 통과시킨다
-6. 필요하면 로그 회전/오류 메시지를 정리한다
+2. `scripts/Test-StartupFlow.ps1 -CheckScheduledTask`를 실행하고 `data/runtime/startup_check.json`을 확인한다
+3. 실패 항목이 있으면 Python/Codex PATH 또는 startup script를 조정한다
+4. `scripts/Start-LifeOps.ps1`를 수동 실행해 watcher/dispatcher pid 파일과 runtime 로그를 확인한다
+5. 실제 로그온 자동 시작을 설치하고 다음 로그인에서 동작을 확인한다
+6. pending event 생성 -> prompt 생성 -> decision 기록까지 한 번 수동으로 통과시킨다
 7. 로컬 커밋: `Verify LifeOps startup flow`
 
 이 작업이 끝나면 Stage 2의 핵심 루프를 실제 Windows 로그인 환경에서 신뢰할 수 있게 된다.
