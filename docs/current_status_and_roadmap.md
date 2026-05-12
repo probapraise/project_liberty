@@ -175,6 +175,7 @@ LifeOps Codex Operator는 사용자의 별도 AI 앱이 아니라, Codex CLI/Cod
 15. `07cf633 Implement recovery mode`
 16. `e523cd5 Fix recovery mode preview timestamp`
 17. `f91bfc7 Clean up self-check artifacts`
+18. `28f9480 Connect decisions to recovery mode`
 
 이 문서 이후의 최신 커밋은 `git log --oneline`으로 확인한다. 앞으로도 기능이 완성될 때마다 의미 단위로 로컬 커밋을 만들고, 사용자가 직접 `git push origin main`을 실행한다.
 
@@ -220,8 +221,10 @@ Windows 로그인 후 Start-LifeOps가 watcher, dispatcher, Codex boot briefing�
 - `src/lifeops/recovery.py`
 - `scripts/Enter-RecoveryMode.ps1`
 - `scripts/Record-InterventionDecision.ps1`
+- `scripts/Test-RecoveryDecisionFlow.ps1`
 - `python -m lifeops.cli enter-recovery-mode --reason ...`
 - `python -m lifeops.cli record-decision --enter-recovery-mode ...`
+- `python -m lifeops.recovery_decision_self_check`
 - recovery session 기록
 - 남은 비필수 schedule block을 `cancelled`로 전환
 - 남은 비필수 task를 `deferred_recovery`로 전환
@@ -230,12 +233,13 @@ Windows 로그인 후 Start-LifeOps가 watcher, dispatcher, Codex boot briefing�
 - dry-run preview 지원
 - 자가점검용 `source=self_check` 일정 블록을 recovery plan에서 제외
 - intervention decision에서 `--enter-recovery-mode`로 recovery mode 연결
+- recovery decision flow를 실제 DB와 분리된 sandbox에서 검증하는 self-check
 - daily summary에 recovery usage와 exception category 집계 반영
 - 사용자 PowerShell에서 self-check cleanup과 recovery dry-run 확인
 
 남음:
 
-- 실제 사용자 PowerShell에서 recovery 적용 모드 확인
+- 사용자 PowerShell에서 recovery decision self-check 확인
 - daily summary 문장 품질 개선
 
 완료 기준:
@@ -328,6 +332,7 @@ Codex가 LifeOps 상태를 더 안정적으로 읽고 기록할 수 있는 tool 
 4. `scripts/Test-StartupFlow.ps1 -CheckScheduledTask`를 다시 실행한다
 5. Codex boot briefing 창이 열렸는지 확인한다
 6. 문제가 없으면 `scripts/Enter-RecoveryMode.ps1 -Reason fatigue -DryRun`으로 recovery preview를 확인한다
-7. 실제 적용 검증은 테스트용 일정/작업을 만든 뒤 `scripts/Record-InterventionDecision.ps1 -EventId <id> -Choice fatigue -EnterRecoveryMode` 경로로 확인한다
+7. recovery 적용 경로는 먼저 `scripts/Test-RecoveryDecisionFlow.ps1`로 격리 검증한다
+8. 실제 event 적용 검증은 pending event id를 확인한 뒤 `scripts/Record-InterventionDecision.ps1 -EventId <id> -Choice fatigue -EnterRecoveryMode` 경로로 확인한다
 
 이 작업이 끝나면 Stage 2의 핵심 루프와 Stage 3-A 회복 모드를 실제 Windows 환경에서 신뢰할 수 있게 된다.

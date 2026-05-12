@@ -86,6 +86,12 @@ pwsh -NoProfile -ExecutionPolicy Bypass -File .\scripts\Enter-RecoveryMode.ps1 -
 pwsh -NoProfile -ExecutionPolicy Bypass -File .\scripts\Record-InterventionDecision.ps1 -EventId 1 -Choice fatigue -DurationMinutes 30 -EnterRecoveryMode
 ```
 
+실제 일정 DB를 건드리지 않고 이 연결 흐름을 확인하려면 격리된 self-check를 실행한다.
+
+```powershell
+pwsh -NoProfile -ExecutionPolicy Bypass -File .\scripts\Test-RecoveryDecisionFlow.ps1
+```
+
 `codex_cli` 경고가 뜨면 Codex CLI 경로를 환경변수로 고정할 수 있다.
 
 ```powershell

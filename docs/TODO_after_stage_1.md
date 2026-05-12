@@ -40,10 +40,11 @@
 - recovery prompt 생성
 - 비필수 schedule block/task defer
 - intervention decision에서 recovery mode로 이어지는 명시 옵션
+- recovery decision flow 격리 self-check
 - daily summary에 recovery usage와 exception category 반영
 
 남음:
-- 실제 적용 모드 사용자 검증
+- 사용자 PowerShell에서 recovery decision self-check 확인
 - daily summary 품질 개선
 - weekly pattern analysis using `codex exec`
 
