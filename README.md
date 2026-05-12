@@ -101,6 +101,20 @@ $env:LIFEOPS_CODEX = "$env:LOCALAPPDATA\OpenAI\Codex\bin\codex.exe"
 
 npm 전역 설치를 쓴 환경이면 `$env:APPDATA\npm\codex.cmd`를 대신 지정한다.
 
+## Daily summary
+
+오늘의 운영 요약을 `data/daily/YYYY-MM-DD.md`로 생성한다.
+
+```powershell
+pwsh -NoProfile -ExecutionPolicy Bypass -File .\scripts\Run-DailySummary.ps1
+```
+
+특정 날짜를 다시 만들 때는 로컬 날짜를 지정한다.
+
+```powershell
+pwsh -NoProfile -ExecutionPolicy Bypass -File .\scripts\Run-DailySummary.ps1 -Date 2026-05-12
+```
+
 ## 자동 시작 설치
 
 ```powershell

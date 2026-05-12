@@ -7,6 +7,7 @@ from pathlib import Path
 
 from .boot import write_boot_context, write_boot_prompt
 from .db import connect, init_db, table_names
+from .daily_summary import write_daily_summary
 from .decision_logging import decision_help_text, normalize_decision, record_intervention_decision
 from .recovery import enter_recovery_mode
 from .schedule_engine import format_block, get_current_block, get_fixed_obligations
@@ -165,56 +166,13 @@ def cmd_enter_recovery_mode(args: argparse.Namespace) -> int:
 
 
 def cmd_write_daily_summary(args: argparse.Namespace) -> int:
-    init_db()
-    now = datetime.now(DEFAULT_TZ)
-    output = Path(args.output) if args.output else Path("data/daily") / f"{now.date().isoformat()}.md"
-    with connect() as conn:
-        intervention_count = conn.execute(
-            "SELECT COUNT(*) AS count FROM intervention_events WHERE timestamp LIKE ?",
-            (f"{now.date().isoformat()}%",),
-        ).fetchone()["count"]
-        false_positive_count = conn.execute(
-            """
-            SELECT COUNT(*) AS count FROM intervention_decisions
-            WHERE timestamp LIKE ? AND category = 'false_positive'
-            """,
-            (f"{now.date().isoformat()}%",),
-        ).fetchone()["count"]
-        recovery_count = conn.execute(
-            "SELECT COUNT(*) AS count FROM recovery_sessions WHERE start_time LIKE ?",
-            (f"{now.date().isoformat()}%",),
-        ).fetchone()["count"]
-        exception_count = conn.execute(
-            "SELECT COUNT(*) AS count FROM exceptions WHERE start_time LIKE ?",
-            (f"{now.date().isoformat()}%",),
-        ).fetchone()["count"]
-        exception_rows = conn.execute(
-            """
-            SELECT category, COUNT(*) AS count FROM exceptions
-            WHERE start_time LIKE ?
-            GROUP BY category
-            ORDER BY count DESC, category
-            """,
-            (f"{now.date().isoformat()}%",),
-        ).fetchall()
-    exception_summary = ", ".join(f"{row['category']}={row['count']}" for row in exception_rows) or "none"
-    text = "\n".join(
-        [
-            f"# Daily Summary {now.date().isoformat()}",
-            "",
-            f"- total_interventions: {intervention_count}",
-            f"- false_positives: {false_positive_count}",
-            f"- recovery_mode_usage: {recovery_count}",
-            f"- exceptions: {exception_count}",
-            f"- exception_categories: {exception_summary}",
-            "- sleep_boundary_incidents: 확인 필요",
-            "",
-            "점수 없음. 처벌 없음. 시스템 조정 참고용 요약입니다.",
-        ]
-    )
-    output.parent.mkdir(parents=True, exist_ok=True)
-    output.write_text(text, encoding="utf-8")
-    print(f"Daily summary written: {output}")
+    output = Path(args.output) if args.output else None
+    try:
+        path = write_daily_summary(output, day=args.date)
+    except ValueError as exc:
+        print(str(exc))
+        return 2
+    print(f"Daily summary written: {path}")
     return 0
 
 
@@ -268,6 +226,7 @@ def build_parser() -> argparse.ArgumentParser:
 
     daily = sub.add_parser("write-daily-summary")
     daily.add_argument("--output")
+    daily.add_argument("--date", help="Local date in YYYY-MM-DD format. Defaults to today in Asia/Seoul.")
     daily.set_defaults(func=cmd_write_daily_summary)
 
     return parser

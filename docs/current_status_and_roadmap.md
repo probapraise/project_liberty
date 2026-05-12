@@ -141,7 +141,7 @@ LifeOps Codex Operator는 사용자의 별도 AI 앱이 아니라, Codex CLI/Cod
 
 현재 watcher는 감지와 기록을 하고, dispatcher는 pending 이벤트를 루멘 intervention prompt로 만들어 Codex 창으로 전달한다. 사용자의 응답은 고정 선택지 코드로 기록되며, 휴식/피로/건강/과부하/계획 수정은 예외 기록과 연결된다. startup flow self-check 스크립트도 추가되어 긴 실행 없이 DB 초기화, boot prompt 생성, watcher 1회, dispatcher dry-run 1회를 확인할 수 있다. intervention loop self-check는 테스트용 Steam 이벤트를 만들고 prompt 생성과 decision 기록까지 닫으며, 테스트용 일정 블록은 실행 후 자동으로 취소한다.
 
-사용자 PowerShell 검증 결과(2026-05-12): startup flow self-check에서 repo_root, powershell, python_environment, init_db, boot_context, boot_prompt, watcher_once, dispatcher_once_dry_run, codex_cli가 PASS였다. 예약 작업 등록은 권한 문제로 Startup 폴더 launcher fallback을 사용했고, `startup_registration`도 PASS였다. `Test-InterventionLoop.ps1` 실행 결과 `status=pass`, `dispatch_status=dispatched`, `decision=return_now`, `final_event_status=decided`로 확인되었다. 이후 `Test-InterventionLoop.ps1 -CleanupOnly`는 남은 self-check 일정 1개를 정리했고, `Enter-RecoveryMode.ps1 -Reason fatigue -DryRun`은 protected/deferred 항목 0개와 fallback next action을 정상 출력했다.
+사용자 PowerShell 검증 결과(2026-05-12): startup flow self-check에서 repo_root, powershell, python_environment, init_db, boot_context, boot_prompt, watcher_once, dispatcher_once_dry_run, codex_cli가 PASS였다. 예약 작업 등록은 권한 문제로 Startup 폴더 launcher fallback을 사용했고, `startup_registration`도 PASS였다. `Test-InterventionLoop.ps1` 실행 결과 `status=pass`, `dispatch_status=dispatched`, `decision=return_now`, `final_event_status=decided`로 확인되었다. 이후 `Test-InterventionLoop.ps1 -CleanupOnly`는 남은 self-check 일정 1개를 정리했고, `Enter-RecoveryMode.ps1 -Reason fatigue -DryRun`은 protected/deferred 항목 0개와 fallback next action을 정상 출력했다. `Test-RecoveryDecisionFlow.ps1`도 sandbox에서 `status=pass`로 확인되었고, protected block 보존, optional block 취소, high task 보존, low task defer가 모두 통과했다.
 
 남은 Stage 2 핵심은 실제 Windows 재로그인/재부팅 후 `Start-LifeOps.ps1`가 자동 실행되어 `data/runtime/startup.log`와 watcher/dispatcher pid가 새로 찍히는지 확인하는 것이다.
 
@@ -176,6 +176,8 @@ LifeOps Codex Operator는 사용자의 별도 AI 앱이 아니라, Codex CLI/Cod
 16. `e523cd5 Fix recovery mode preview timestamp`
 17. `f91bfc7 Clean up self-check artifacts`
 18. `28f9480 Connect decisions to recovery mode`
+19. `bc3b053 Add recovery decision self-check`
+20. `cf4ff58 Fix recovery decision self-check task expectations`
 
 이 문서 이후의 최신 커밋은 `git log --oneline`으로 확인한다. 앞으로도 기능이 완성될 때마다 의미 단위로 로컬 커밋을 만들고, 사용자가 직접 `git push origin main`을 실행한다.
 
@@ -235,12 +237,13 @@ Windows 로그인 후 Start-LifeOps가 watcher, dispatcher, Codex boot briefing�
 - intervention decision에서 `--enter-recovery-mode`로 recovery mode 연결
 - recovery decision flow를 실제 DB와 분리된 sandbox에서 검증하는 self-check
 - daily summary에 recovery usage와 exception category 집계 반영
-- 사용자 PowerShell에서 self-check cleanup과 recovery dry-run 확인
+- daily summary를 루멘이 읽을 수 있는 운영 요약 형식으로 개선
+- 사용자 PowerShell에서 self-check cleanup, recovery dry-run, recovery decision self-check 확인
 
 남음:
 
-- 사용자 PowerShell에서 recovery decision self-check 확인
-- daily summary 문장 품질 개선
+- 사용자 PowerShell에서 daily summary 생성 확인
+- weekly pattern analysis 준비
 
 완료 기준:
 
@@ -255,7 +258,7 @@ Windows 로그인 후 Start-LifeOps가 watcher, dispatcher, Codex boot briefing�
 
 해야 할 일:
 
-- activity/intervention/decision 로그 요약
+- activity/intervention/decision 로그 요약 1차 구현
 - 피로 예외, 복귀 시간, 반복 마찰 지점 집계
 - `codex exec`용 weekly pattern prompt 정리
 - rule proposal 생성

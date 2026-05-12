@@ -42,10 +42,10 @@
 - intervention decision에서 recovery mode로 이어지는 명시 옵션
 - recovery decision flow 격리 self-check
 - daily summary에 recovery usage와 exception category 반영
+- daily summary를 루멘이 읽을 수 있는 운영 요약 형식으로 개선
 
 남음:
-- 사용자 PowerShell에서 recovery decision self-check 확인
-- daily summary 품질 개선
+- 사용자 PowerShell에서 daily summary 생성 확인
 - weekly pattern analysis using `codex exec`
 
 ## Stage 4
