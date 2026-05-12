@@ -1,16 +1,34 @@
-﻿risky_domains:
-  - youtube.com
-  - youtu.be
-  - twitch.tv
-  - reddit.com
-  - instagram.com
-  - x.com
+﻿monitoring_scope:
+  only_watch:
+    - chrome
+    - steam
 
-risky_processes:
-  - steam.exe
+chrome:
+  processes:
+    - chrome.exe
+  risky_domains:
+    - youtube.com
+    - youtu.be
+    - twitch.tv
+    - reddit.com
+    - instagram.com
+    - x.com
+
+steam:
+  processes:
+    - steam.exe
+    - steamwebhelper.exe
+  classification: game_gateway
+
+ignored_processes:
+  - msedge.exe
+  - firefox.exe
+  - brave.exe
+  - opera.exe
   - epicgameslauncher.exe
   - riotclientservices.exe
   - battle.net.exe
+  - goggalaxy.exe
 
 allowed_contexts:
   - rest day

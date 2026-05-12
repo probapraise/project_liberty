@@ -25,3 +25,4 @@ git_bad_acl/
 data/events/*.jsonl
 data/daily/*.md
 data/proposals/*.md
+data/runtime/*.json

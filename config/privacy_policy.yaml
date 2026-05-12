@@ -1,8 +1,15 @@
-﻿collect:
+﻿monitoring_scope:
+  only_watch:
+    - chrome.exe
+    - steam.exe
+    - steamwebhelper.exe
+  ignore_all_other_processes_by_default: true
+
+collect:
   - timestamp
   - active_process_name
   - active_window_title
-  - browser_domain
+  - chrome_domain
   - current_plan_block
   - mismatch_type
   - user_decision
@@ -15,6 +22,8 @@ never_collect:
   - browser_page_body
   - private_message_body
   - password_or_secret_text
+  - non_chrome_browser_domains
+  - non_steam_game_process_catalog
 
 storage:
   sqlite: data/state.db

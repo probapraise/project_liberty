@@ -1,4 +1,4 @@
-﻿from __future__ import annotations
+from __future__ import annotations
 
 import argparse
 import time
@@ -22,11 +22,11 @@ def write_heartbeat(message: str) -> None:
 
 def run(interval_seconds: int, once: bool) -> None:
     init_db()
-    write_heartbeat("Stage 1 watcher placeholder started. No window contents, keystrokes, screenshots, or page bodies are collected.")
+    write_heartbeat("Stage 1 watcher placeholder started. Stage 2 scope is Chrome/Steam only; no window contents, keystrokes, screenshots, or page bodies are collected.")
     if once:
         return
     while True:
-        write_heartbeat("Stage 1 watcher heartbeat. Real activity polling starts in Stage 2.")
+        write_heartbeat("Stage 1 watcher heartbeat. Real Chrome/Steam-only activity polling starts in Stage 2.")
         time.sleep(interval_seconds)
 
 
@@ -41,5 +41,3 @@ def main(argv: list[str] | None = None) -> int:
 
 if __name__ == "__main__":
     raise SystemExit(main())
-
-

@@ -106,5 +106,29 @@ class RepositorySafetyTests(unittest.TestCase):
                 self.assertNotIn(token, lowered, str(path))
 
 
+
+class ScopeConstraintTests(unittest.TestCase):
+    def setUp(self) -> None:
+        self.repo = Path(__file__).resolve().parents[1]
+
+    def test_blocklist_limits_monitoring_to_chrome_and_steam(self) -> None:
+        text = (self.repo / "config" / "blocklist.yaml").read_text(encoding="utf-8").lower()
+        self.assertIn("chrome.exe", text)
+        self.assertIn("steam.exe", text)
+        self.assertIn("steamwebhelper.exe", text)
+        self.assertIn("ignored_processes", text)
+
+    def test_app_scope_ignores_non_chrome_non_steam(self) -> None:
+        from lifeops.app_scope import classify_monitored_process, is_monitored_process
+
+        self.assertTrue(is_monitored_process("chrome.exe"))
+        self.assertTrue(is_monitored_process("steam.exe"))
+        self.assertTrue(is_monitored_process("steamwebhelper.exe"))
+        self.assertFalse(is_monitored_process("msedge.exe"))
+        self.assertFalse(is_monitored_process("game.exe"))
+        self.assertEqual(classify_monitored_process("chrome.exe"), "chrome")
+        self.assertEqual(classify_monitored_process("steam.exe"), "steam")
+        self.assertEqual(classify_monitored_process("game.exe"), "ignored")
+
 if __name__ == "__main__":
     unittest.main()
