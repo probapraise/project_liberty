@@ -60,6 +60,12 @@ pwsh -NoProfile -ExecutionPolicy Bypass -File .\scripts\Test-InterventionLoop.ps
 pwsh -NoProfile -ExecutionPolicy Bypass -File .\scripts\Test-InterventionLoop.ps1 -Choice intentional_rest -DurationMinutes 1
 ```
 
+자가점검은 테스트용 일정 블록을 실행 후 자동으로 취소한다. 이전 버전에서 남은 자가점검 일정이 있으면 아래 명령으로 정리한다.
+
+```powershell
+pwsh -NoProfile -ExecutionPolicy Bypass -File .\scripts\Test-InterventionLoop.ps1 -CleanupOnly
+```
+
 ## Recovery mode
 
 남은 하루를 최소안으로 줄이고, 비필수 블록/작업을 미루며, recovery prompt를 생성한다.

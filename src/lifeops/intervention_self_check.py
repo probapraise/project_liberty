@@ -107,11 +107,30 @@ def _event_status(event_id: int) -> str:
     return str(row["status"])
 
 
+def cleanup_self_check_artifacts() -> dict[str, object]:
+    init_db()
+    with connect() as conn:
+        cursor = conn.execute(
+            """
+            UPDATE schedule_blocks
+            SET status = 'cancelled'
+            WHERE source = 'self_check' AND status != 'cancelled'
+            """
+        )
+        cancelled_blocks = int(cursor.rowcount if cursor.rowcount is not None and cursor.rowcount >= 0 else 0)
+        conn.commit()
+    return {
+        "status": "cleaned",
+        "cancelled_schedule_blocks": cancelled_blocks,
+    }
+
+
 def run_self_check(
     *,
     choice: str = "return_now",
     duration_minutes: int | None = None,
     reason: str = "LifeOps intervention loop self-check",
+    cleanup: bool = True,
 ) -> dict[str, object]:
     init_db()
     now = datetime.now(DEFAULT_TZ)
@@ -127,6 +146,14 @@ def run_self_check(
         duration_minutes=duration_minutes,
     )
     final_status = _event_status(event_id)
+    cleanup_result = (
+        cleanup_self_check_artifacts()
+        if cleanup
+        else {
+            "status": "skipped",
+            "cancelled_schedule_blocks": 0,
+        }
+    )
 
     return {
         "status": "pass",
@@ -139,6 +166,7 @@ def run_self_check(
         "decision_category": decision["category"],
         "exception_id": decision.get("exception_id"),
         "final_event_status": final_status,
+        "cleanup": cleanup_result,
     }
 
 
@@ -147,12 +175,20 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("--choice", default="return_now")
     parser.add_argument("--duration-minutes", type=int)
     parser.add_argument("--reason", default="LifeOps intervention loop self-check")
+    parser.add_argument("--keep-artifacts", action="store_true", help="Leave self-check schedule artifacts in place.")
+    parser.add_argument("--cleanup-only", action="store_true", help="Only clean old self-check schedule artifacts.")
     args = parser.parse_args(argv)
+
+    if args.cleanup_only:
+        result = cleanup_self_check_artifacts()
+        print(json.dumps(result, ensure_ascii=False, indent=2, sort_keys=True))
+        return 0
 
     result = run_self_check(
         choice=args.choice,
         duration_minutes=args.duration_minutes,
         reason=args.reason,
+        cleanup=not args.keep_artifacts,
     )
     print(json.dumps(result, ensure_ascii=False, indent=2, sort_keys=True))
     return 0

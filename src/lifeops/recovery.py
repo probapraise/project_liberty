@@ -87,6 +87,14 @@ def _time_after_or_current(row: Any, current_clock: str) -> bool:
     return str(row["end_time"]) > current_clock or str(row["start_time"]) >= current_clock
 
 
+def _is_self_check_block(row: Any) -> bool:
+    try:
+        source = row["source"]
+    except (IndexError, KeyError, TypeError):
+        return False
+    return str(source or "").lower() == "self_check"
+
+
 def _is_protected_block(row: Any) -> bool:
     block_type = str(row["type"] or "").lower()
     enforcement = str(row["enforcement_level"] or "").lower()
@@ -155,7 +163,11 @@ def build_recovery_plan(
 
     with connect() as conn:
         today_blocks = get_today_blocks(conn, today)
-    remaining_blocks = [row for row in today_blocks if _time_after_or_current(row, current_clock)]
+    remaining_blocks = [
+        row
+        for row in today_blocks
+        if _time_after_or_current(row, current_clock) and not _is_self_check_block(row)
+    ]
     protected_blocks = [row for row in remaining_blocks if _is_protected_block(row)]
     deferred_blocks = [row for row in remaining_blocks if not _is_protected_block(row)]
 

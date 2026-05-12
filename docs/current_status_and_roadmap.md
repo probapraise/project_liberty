@@ -139,7 +139,7 @@ LifeOps Codex Operator는 사용자의 별도 AI 앱이 아니라, Codex CLI/Cod
 - `tests/test_stage2_activity.py`
 - `tests/test_stage2_dispatcher.py`
 
-현재 watcher는 감지와 기록을 하고, dispatcher는 pending 이벤트를 루멘 intervention prompt로 만들어 Codex 창으로 전달한다. 사용자의 응답은 고정 선택지 코드로 기록되며, 휴식/피로/건강/과부하/계획 수정은 예외 기록과 연결된다. startup flow self-check 스크립트도 추가되어 긴 실행 없이 DB 초기화, boot prompt 생성, watcher 1회, dispatcher dry-run 1회를 확인할 수 있다. intervention loop self-check는 테스트용 Steam 이벤트를 만들고 prompt 생성과 decision 기록까지 닫는다.
+현재 watcher는 감지와 기록을 하고, dispatcher는 pending 이벤트를 루멘 intervention prompt로 만들어 Codex 창으로 전달한다. 사용자의 응답은 고정 선택지 코드로 기록되며, 휴식/피로/건강/과부하/계획 수정은 예외 기록과 연결된다. startup flow self-check 스크립트도 추가되어 긴 실행 없이 DB 초기화, boot prompt 생성, watcher 1회, dispatcher dry-run 1회를 확인할 수 있다. intervention loop self-check는 테스트용 Steam 이벤트를 만들고 prompt 생성과 decision 기록까지 닫으며, 테스트용 일정 블록은 실행 후 자동으로 취소한다.
 
 사용자 PowerShell 검증 결과(2026-05-12): startup flow self-check에서 repo_root, powershell, python_environment, init_db, boot_context, boot_prompt, watcher_once, dispatcher_once_dry_run, codex_cli가 PASS였다. 예약 작업 등록은 권한 문제로 Startup 폴더 launcher fallback을 사용했고, `startup_registration`도 PASS였다. `Test-InterventionLoop.ps1` 실행 결과 `status=pass`, `dispatch_status=dispatched`, `decision=return_now`, `final_event_status=decided`로 확인되었다.
 
@@ -172,6 +172,8 @@ LifeOps Codex Operator는 사용자의 별도 AI 앱이 아니라, Codex CLI/Cod
 12. `5dea975 Fix scheduled task run level`
 13. `d6b175a Add intervention loop self-check`
 14. `2f40e06 Document Stage 2 self-check results`
+15. `07cf633 Implement recovery mode`
+16. `e523cd5 Fix recovery mode preview timestamp`
 
 이 문서 이후의 최신 커밋은 `git log --oneline`으로 확인한다. 앞으로도 기능이 완성될 때마다 의미 단위로 로컬 커밋을 만들고, 사용자가 직접 `git push origin main`을 실행한다.
 
@@ -223,6 +225,7 @@ Windows 로그인 후 Start-LifeOps가 watcher, dispatcher, Codex boot briefing�
 - 수면, 식사, 복약, 위생, 고정 일정, work block 보호
 - recovery prompt 생성
 - dry-run preview 지원
+- 자가점검용 `source=self_check` 일정 블록을 recovery plan에서 제외
 
 남음:
 
@@ -319,7 +322,7 @@ Codex가 LifeOps 상태를 더 안정적으로 읽고 기록할 수 있는 tool 
 3. `data/runtime/watcher.pid`와 `data/runtime/dispatcher.pid`가 생겼는지 확인한다
 4. `scripts/Test-StartupFlow.ps1 -CheckScheduledTask`를 다시 실행한다
 5. Codex boot briefing 창이 열렸는지 확인한다
-6. 문제가 없으면 `scripts/Enter-RecoveryMode.ps1 -Reason fatigue -DryRun`으로 recovery preview를 확인한다
-7. 로컬 커밋: `Implement recovery mode`
+6. 이전 self-check 더미 일정이 남아 있으면 `scripts/Test-InterventionLoop.ps1 -CleanupOnly`로 정리한다
+7. 문제가 없으면 `scripts/Enter-RecoveryMode.ps1 -Reason fatigue -DryRun`으로 recovery preview를 확인한다
 
-이 작업이 끝나면 Stage 2의 핵심 루프를 실제 Windows 로그인 환경에서 신뢰할 수 있게 된다.
+이 작업이 끝나면 Stage 2의 핵심 루프와 Stage 3-A 회복 모드를 실제 Windows 환경에서 신뢰할 수 있게 된다.

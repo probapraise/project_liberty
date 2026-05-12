@@ -31,15 +31,24 @@ class Stage3RecoveryModeTests(unittest.TestCase):
     def _clock(self, minutes: int) -> str:
         return (self.now + timedelta(minutes=minutes)).strftime("%H:%M")
 
-    def _insert_block(self, *, title: str, block_type: str, start_offset: int, end_offset: int, enforcement: str = "normal") -> int:
+    def _insert_block(
+        self,
+        *,
+        title: str,
+        block_type: str,
+        start_offset: int,
+        end_offset: int,
+        enforcement: str = "normal",
+        source: str = "manual",
+    ) -> int:
         today = self.now.date().isoformat()
         with connect() as conn:
             cursor = conn.execute(
                 """
-                INSERT INTO schedule_blocks(date, start_time, end_time, type, title, enforcement_level)
-                VALUES (?, ?, ?, ?, ?, ?)
+                INSERT INTO schedule_blocks(date, start_time, end_time, type, title, enforcement_level, source)
+                VALUES (?, ?, ?, ?, ?, ?, ?)
                 """,
-                (today, self._clock(start_offset), self._clock(end_offset), block_type, title, enforcement),
+                (today, self._clock(start_offset), self._clock(end_offset), block_type, title, enforcement, source),
             )
             conn.commit()
             return int(cursor.lastrowid)
@@ -77,6 +86,21 @@ class Stage3RecoveryModeTests(unittest.TestCase):
         self.assertEqual(high["status"], "pending")
         self.assertEqual(low["status"], "deferred_recovery")
         self.assertEqual(recovery_sessions["count"], 1)
+
+    def test_recovery_mode_ignores_self_check_blocks(self) -> None:
+        self_check_block = self._insert_block(
+            title="LifeOps self-check focus block",
+            block_type="work",
+            start_offset=10,
+            end_offset=40,
+            source="self_check",
+        )
+        result = enter_recovery_mode(reason="fatigue", duration_hours=1, apply=False, now=self.now)
+        protected_ids = {block["id"] for block in result.plan["protected_blocks"]}
+        deferred_ids = {block["id"] for block in result.plan["deferred_blocks"]}
+        self.assertNotIn(self_check_block, protected_ids)
+        self.assertNotIn(self_check_block, deferred_ids)
+        self.assertNotIn("LifeOps self-check", result.plan["next_action"])
 
     def test_dry_run_does_not_mutate_plan(self) -> None:
         soft_block = self._insert_block(title="optional study", block_type="study", start_offset=10, end_offset=40)
