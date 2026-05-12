@@ -23,8 +23,9 @@ LifeOps Codex Operator는 Codex CLI/Codex app을 생활 운영 보조자로 사�
 - Steam: `steam.exe`, `steamwebhelper.exe`, 그리고 Steam이 실행한 foreground 앱을 게임 활동의 단일 진입점으로 본다.
 - 감시 범위 밖 프로세스는 제목을 저장하지 않고 개입 대상으로 삼지 않는다. Steam 하위 앱은 개별 exe 목록 없이 `steam-launched-app`으로만 정규화한다.
 - 현재 계획 블록과 어긋나는 Steam 활동 또는 주의가 필요한 Chrome 활동은 `intervention_events`에 pending 상태로 기록한다.
+- dispatcher는 pending event를 루멘 intervention prompt로 렌더링하고 Codex intervention 창으로 전달한다.
 
-Codex intervention 창 실행은 다음 Stage 2 작업으로 남아 있다.
+Codex intervention prompt dispatch는 구현되었다. 다음 Stage 2 작업은 사용자의 응답을 더 안정적으로 기록하는 decision logging UX 정리다.
 
 현재 상태와 다음 작업 목록은 [current_status_and_roadmap.md](docs/current_status_and_roadmap.md)를 기준으로 한다.
 

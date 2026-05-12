@@ -16,12 +16,14 @@
 - Steam 실행/활성 창/Steam 하위 프로세스 기반 게임 게이트웨이 분류
 - 기본 policy engine 구현
 - pending intervention event 생성
+- Codex intervention prompt 렌더링
+- intervention dispatcher가 pending event를 Codex 창으로 전달
 - decision logging 기본 CLI 유지
 
 남음:
-- Codex intervention prompt 실행
-- intervention dispatcher가 pending event를 Codex 창으로 전달
+- decision logging UX 확장
 - 반복 개입 UX 다듬기
+- 실제 로그인 자동 시작 환경에서 watcher/dispatcher end-to-end 점검
 
 ## Stage 3
 

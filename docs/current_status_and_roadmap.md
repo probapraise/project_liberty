@@ -118,7 +118,10 @@ LifeOps Codex Operator는 사용자의 별도 AI 앱이 아니라, Codex CLI/Cod
 - Steam 및 Steam 하위 foreground 앱을 게임 게이트웨이로 분류
 - 현재 계획 블록과 충돌 시 `intervention_events`에 pending 이벤트 생성
 - 개입 쿨다운 기본 정책
-- Stage 2 활동 테스트 추가
+- pending event를 intervention prompt로 렌더링
+- Codex intervention 창 실행 브리지
+- dispatch 중복 방지용 `dispatching` 상태 전환
+- Stage 2 활동/dispatcher 테스트 추가
 
 주요 파일:
 
@@ -126,10 +129,13 @@ LifeOps Codex Operator는 사용자의 별도 AI 앱이 아니라, Codex CLI/Cod
 - `src/lifeops/activity_watcher.py`
 - `src/lifeops/browser_activity.py`
 - `src/lifeops/policy_engine.py`
+- `src/lifeops/event_dispatcher.py`
+- `src/lifeops/codex_bridge.py`
 - `src/lifeops/models.py`
 - `tests/test_stage2_activity.py`
+- `tests/test_stage2_dispatcher.py`
 
-현재 watcher는 감지와 기록까지 한다. pending 이벤트를 실제 Codex intervention 창으로 여는 작업은 아직 남아 있다.
+현재 watcher는 감지와 기록을 하고, dispatcher는 pending 이벤트를 루멘 intervention prompt로 만들어 Codex 창으로 전달한다. 남은 핵심은 사용자의 응답을 더 안정적으로 기록하고 복구/예외 흐름과 연결하는 것이다.
 
 ### 오퍼레이터 persona 완료
 
@@ -148,8 +154,9 @@ LifeOps Codex Operator는 사용자의 별도 AI 앱이 아니라, Codex CLI/Cod
 2. `8aabb36 Constrain monitoring scope to Chrome and Steam`
 3. `40df891 Implement Chrome and Steam activity watcher`
 4. `5d39086 Define LifeOps operator persona`
+5. `4742b1c Document current status and roadmap`
 
-앞으로도 기능이 완성될 때마다 의미 단위로 로컬 커밋을 만들고, 사용자가 직접 `git push origin main`을 실행한다.
+이 문서 이후의 최신 커밋은 `git log --oneline`으로 확인한다. 앞으로도 기능이 완성될 때마다 의미 단위로 로컬 커밋을 만들고, 사용자가 직접 `git push origin main`을 실행한다.
 
 ## 현재 알려진 제한과 주의점
 
@@ -161,30 +168,7 @@ LifeOps Codex Operator는 사용자의 별도 AI 앱이 아니라, Codex CLI/Cod
 
 ## 다음 작업 목록
 
-### 1. Stage 2-B: pending intervention dispatcher 완성
-
-목표:
-
-pending 상태의 `intervention_events`를 읽고 Codex intervention prompt를 생성한 뒤, Codex 창을 열어 루멘이 사용자에게 개입하도록 만든다.
-
-해야 할 일:
-
-- pending event 조회 로직 확장
-- activity event + schedule block을 합쳐 intervention prompt 생성
-- `prompts/intervention_prompt.md` 템플릿 실제 사용
-- 생성된 prompt를 `data/exports/intervention_prompt_<id>.md`에 저장
-- Windows Terminal 또는 Codex CLI로 intervention 세션 실행
-- 실행 후 event status를 `dispatched`로 변경
-- 실패 시 status를 유지하고 runtime log에 기록
-- dispatcher 테스트 추가
-
-완료 기준:
-
-- watcher가 만든 pending event를 dispatcher가 찾아 prompt를 만든다.
-- 실제 Codex intervention 창 실행 경로가 스크립트로 연결된다.
-- 중복 dispatch가 발생하지 않는다.
-
-### 2. Stage 2-C: decision logging UX 정리
+### 1. Stage 2-C: decision logging UX 정리
 
 목표:
 
@@ -203,7 +187,7 @@ pending 상태의 `intervention_events`를 읽고 Codex intervention prompt를 �
 - 사용자의 선택 하나로 DB 상태가 일관되게 바뀐다.
 - 판단/훈계 문구 없이 기록된다.
 
-### 3. Stage 2-D: 실제 부팅/로그온 동작 점검
+### 2. Stage 2-D: 실제 부팅/로그온 동작 점검
 
 목표:
 
@@ -223,7 +207,7 @@ Windows 로그인 후 Start-LifeOps가 watcher, dispatcher, Codex boot briefing�
 - 사용자가 직접 실행하지 않아도 로그인 후 LifeOps가 시작된다.
 - 실패 시 원인을 `data/runtime/startup.log`에서 확인할 수 있다.
 
-### 4. Stage 3-A: recovery mode 실사용화
+### 3. Stage 3-A: recovery mode 실사용화
 
 목표:
 
@@ -242,7 +226,7 @@ Windows 로그인 후 Start-LifeOps가 watcher, dispatcher, Codex boot briefing�
 - 사용자가 회복 모드를 선택하면 남은 하루가 작게 재구성된다.
 - 죄책감/벌칙 없이 다음 행동이 생성된다.
 
-### 5. Stage 3-B: daily summary와 weekly review
+### 4. Stage 3-B: daily summary와 weekly review
 
 목표:
 
@@ -261,7 +245,7 @@ Windows 로그인 후 Start-LifeOps가 watcher, dispatcher, Codex boot briefing�
 - 매일 짧은 운영 요약이 생성된다.
 - 주간 리뷰에서 시스템 조정 제안이 최대 3개 생성된다.
 
-### 6. Stage 4: Chrome extension과 Native Messaging
+### 5. Stage 4: Chrome extension과 Native Messaging
 
 목표:
 
@@ -280,7 +264,7 @@ Chrome title 기반 추정을 넘어, Chrome 도메인만 안정적으로 보고
 - Chrome의 현재 도메인을 페이지 본문 없이 안전하게 기록한다.
 - 위험 도메인에서 마찰 또는 redirect가 가능하다.
 
-### 7. Stage 4 후반: calendar 연동
+### 6. Stage 4 후반: calendar 연동
 
 목표:
 
@@ -298,7 +282,7 @@ Chrome title 기반 추정을 넘어, Chrome 도메인만 안정적으로 보고
 - 고정 일정이 DB schedule_blocks에 반영된다.
 - 캘린더 연동은 LLM API와 무관하게 동작한다.
 
-### 8. Stage 5: MCP/tool 고도화
+### 7. Stage 5: MCP/tool 고도화
 
 목표:
 
@@ -317,15 +301,15 @@ Codex가 LifeOps 상태를 더 안정적으로 읽고 기록할 수 있는 tool 
 
 ## 다음 세션의 첫 권장 작업
 
-가장 먼저 할 일은 Stage 2-B다.
+가장 먼저 할 일은 Stage 2-C다.
 
 시작 순서:
 
-1. `src/lifeops/event_dispatcher.py` 확인
-2. `src/lifeops/codex_bridge.py` 확장
-3. pending event를 intervention prompt markdown으로 렌더링
-4. dispatcher가 prompt 생성 후 event status를 `dispatched`로 바꾸도록 구현
-5. 중복 실행 방지 테스트 작성
-6. 로컬 커밋: `Implement intervention dispatcher`
+1. `src/lifeops/cli.py`의 `record-decision` 확인
+2. 선택지 코드와 category를 `docs/operator_persona.md`의 고정 선택지와 맞춘다
+3. decision 기록 후 event 상태, exception, recovery 흐름을 정리한다
+4. intervention prompt의 기록 안내를 실제 CLI 옵션과 맞춘다
+5. decision logging 테스트를 작성한다
+6. 로컬 커밋: `Improve intervention decision logging`
 
-이 작업이 끝나면 Chrome/Steam 감지 -> pending event -> Codex intervention 창 실행까지 Stage 2의 핵심 루프가 이어진다.
+이 작업이 끝나면 Chrome/Steam 감지 -> pending event -> Codex intervention 창 -> 사용자 선택 기록까지 Stage 2의 핵심 루프가 이어진다.
