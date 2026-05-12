@@ -290,6 +290,7 @@ def enter_recovery_mode(
     duration_hours: int = DEFAULT_DURATION_HOURS,
     output: Path | None = None,
     apply: bool = True,
+    now: datetime | None = None,
 ) -> RecoveryResult:
     init_db()
     if duration_hours <= 0:
