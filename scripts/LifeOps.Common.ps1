@@ -12,6 +12,33 @@ function Get-LifeOpsPowerShell {
     throw 'PowerShell executable not found.'
 }
 
+function Get-LifeOpsCodexCommand {
+    if ($env:LIFEOPS_CODEX -and (Test-Path -LiteralPath $env:LIFEOPS_CODEX)) {
+        return (Resolve-Path -LiteralPath $env:LIFEOPS_CODEX).Path
+    }
+
+    $cmd = Get-Command codex -ErrorAction SilentlyContinue
+    if ($cmd) { return $cmd.Source }
+
+    $candidates = @()
+    if ($env:APPDATA) {
+        $candidates += (Join-Path $env:APPDATA 'npm\codex.cmd')
+        $candidates += (Join-Path $env:APPDATA 'npm\codex.ps1')
+    }
+    if ($env:LOCALAPPDATA) {
+        $candidates += (Join-Path $env:LOCALAPPDATA 'OpenAI\Codex\bin\codex.exe')
+        $candidates += (Join-Path $env:LOCALAPPDATA 'Programs\Codex\codex.exe')
+    }
+
+    foreach ($candidate in $candidates) {
+        if ($candidate -and (Test-Path -LiteralPath $candidate)) {
+            return (Resolve-Path -LiteralPath $candidate).Path
+        }
+    }
+
+    throw 'Codex CLI not found. Add codex to PATH or set LIFEOPS_CODEX to codex.cmd/exe.'
+}
+
 function Assert-LifeOpsPythonVersion {
     param(
         [Parameter(Mandatory=$true)][string]$PythonPath

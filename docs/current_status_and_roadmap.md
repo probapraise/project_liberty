@@ -124,6 +124,7 @@ LifeOps Codex Operator는 사용자의 별도 AI 앱이 아니라, Codex CLI/Cod
 - Stage 2 활동/dispatcher 테스트 추가
 - watcher/dispatcher 1회 실행 옵션 추가
 - startup flow self-check 스크립트 추가
+- Codex CLI 경로를 PATH 또는 LIFEOPS_CODEX로 확인
 
 주요 파일:
 
@@ -293,7 +294,7 @@ Codex가 LifeOps 상태를 더 안정적으로 읽고 기록할 수 있는 tool 
 
 1. 사용자 PowerShell에서 Python 3.12+와 Codex CLI 경로를 확인한다
 2. `scripts/Test-StartupFlow.ps1 -CheckScheduledTask`를 실행하고 `data/runtime/startup_check.json`을 확인한다
-3. 실패 항목이 있으면 Python/Codex PATH 또는 startup script를 조정한다
+3. 실패 항목이 있으면 Python/Codex PATH, LIFEOPS_CODEX, 또는 startup script를 조정한다
 4. `scripts/Start-LifeOps.ps1`를 수동 실행해 watcher/dispatcher pid 파일과 runtime 로그를 확인한다
 5. 실제 로그온 자동 시작을 설치하고 다음 로그인에서 동작을 확인한다
 6. pending event 생성 -> prompt 생성 -> decision 기록까지 한 번 수동으로 통과시킨다

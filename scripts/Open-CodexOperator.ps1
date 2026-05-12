@@ -1,4 +1,4 @@
-﻿. "$PSScriptRoot\LifeOps.Common.ps1"
+. "$PSScriptRoot\LifeOps.Common.ps1"
 
 $root = Get-LifeOpsRepoRoot
 try {
@@ -13,10 +13,11 @@ $promptPath = Join-Path $root 'data\exports\boot_prompt.md'
 & $python -m lifeops.cli init-db | Out-Null
 & $python -m lifeops.cli write-boot-prompt --output $promptPath | Out-Null
 
-$codex = Get-Command codex -ErrorAction SilentlyContinue
-if (-not $codex) {
-    Write-LifeOpsLog 'Codex CLI not found. Boot briefing window was not opened.'
-    Show-LifeOpsNotification -Title 'LifeOps Codex' -Message 'Codex CLI를 찾지 못했습니다. PATH 설정을 확인하세요.'
+try {
+    $codex = Get-LifeOpsCodexCommand
+} catch {
+    Write-LifeOpsLog "Codex CLI not found. Boot briefing window was not opened: $($_.Exception.Message)"
+    Show-LifeOpsNotification -Title 'LifeOps Codex' -Message 'Codex CLI를 찾지 못했습니다. PATH 또는 LIFEOPS_CODEX 설정을 확인하세요.'
     exit 1
 }
 
@@ -25,7 +26,8 @@ $srcPath = Join-Path $root 'src'
 $escapedRoot = $root.Replace("'", "''")
 $escapedPrompt = $promptPath.Replace("'", "''")
 $escapedSrc = $srcPath.Replace("'", "''")
-$command = "`$env:LIFEOPS_REPO_ROOT = '$escapedRoot'; `$env:PYTHONPATH = '$escapedSrc'; `$prompt = Get-Content -LiteralPath '$escapedPrompt' -Raw -Encoding UTF8; codex --cd '$escapedRoot' --profile lifeops `$prompt"
+$escapedCodex = $codex.Replace("'", "''")
+$command = "`$env:LIFEOPS_REPO_ROOT = '$escapedRoot'; `$env:PYTHONPATH = '$escapedSrc'; `$prompt = Get-Content -LiteralPath '$escapedPrompt' -Raw -Encoding UTF8; & '$escapedCodex' --cd '$escapedRoot' --profile lifeops `$prompt"
 
 $wt = Get-Command wt.exe -ErrorAction SilentlyContinue
 if ($wt) {

@@ -112,11 +112,11 @@ if ($ps -and $python) {
 }
 
 if (-not $SkipCodexCheck) {
-    $codex = Get-Command codex -ErrorAction SilentlyContinue
-    if ($codex) {
-        Add-StartupCheckResult -Name 'codex_cli' -Status 'PASS' -Detail $codex.Source
-    } else {
-        Add-StartupCheckResult -Name 'codex_cli' -Status 'WARN' -Detail 'codex was not found on PATH for this shell'
+    try {
+        $codex = Get-LifeOpsCodexCommand
+        Add-StartupCheckResult -Name 'codex_cli' -Status 'PASS' -Detail $codex
+    } catch {
+        Add-StartupCheckResult -Name 'codex_cli' -Status 'WARN' -Detail $_.Exception.Message
     }
 }
 
