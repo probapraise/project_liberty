@@ -8,9 +8,9 @@ $action = New-ScheduledTaskAction -Execute $ps -Argument $argument
 $trigger = New-ScheduledTaskTrigger -AtLogOn
 $settings = New-ScheduledTaskSettingsSet -AllowStartIfOnBatteries -DontStopIfGoingOnBatteries -StartWhenAvailable
 $userId = [System.Security.Principal.WindowsIdentity]::GetCurrent().Name
-$principal = New-ScheduledTaskPrincipal -UserId $userId -LogonType Interactive -RunLevel LeastPrivilege
 
 try {
+    $principal = New-ScheduledTaskPrincipal -UserId $userId -LogonType Interactive -RunLevel Limited -ErrorAction Stop
     Register-ScheduledTask -TaskName $taskName -Action $action -Trigger $trigger -Settings $settings -Principal $principal -Description 'Start LifeOps Codex Operator at user logon.' -Force -ErrorAction Stop | Out-Null
     Write-LifeOpsLog "Installed startup task $taskName."
     Write-Host "Installed startup task: $taskName"
