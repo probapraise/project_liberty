@@ -125,6 +125,7 @@ EVENT_LOGS = [
     "interventions.jsonl",
     "exceptions.jsonl",
     "intervention_decisions.jsonl",
+    "recovery_sessions.jsonl",
 ]
 
 

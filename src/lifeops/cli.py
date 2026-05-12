@@ -8,6 +8,7 @@ from pathlib import Path
 from .boot import write_boot_context, write_boot_prompt
 from .db import connect, init_db, table_names
 from .decision_logging import decision_help_text, record_intervention_decision
+from .recovery import enter_recovery_mode
 from .schedule_engine import format_block, get_current_block, get_fixed_obligations
 
 DEFAULT_TZ = timezone(timedelta(hours=9), "Asia/Seoul")
@@ -110,33 +111,29 @@ def cmd_record_decision(args: argparse.Namespace) -> int:
 
 
 def cmd_enter_recovery_mode(args: argparse.Namespace) -> int:
-    init_db()
-    now = datetime.now(DEFAULT_TZ)
-    minimized = {
-        "label": "남은 하루 최소안",
-        "preserve": ["수면", "식사", "복약", "위생", "고정 일정"],
-        "next_action": "물 한 잔 마시고 3분 동안 다음 필수 행동 하나만 정하기",
-        "note": "밀린 일은 자동 재배치 대상입니다. 보충 벌칙은 없습니다.",
-    }
-    with connect() as conn:
-        conn.execute(
-            """
-            INSERT INTO recovery_sessions(start_time, end_time, reason, minimized_plan_json)
-            VALUES (?, ?, ?, ?)
-            """,
-            (
-                now.isoformat(timespec="seconds"),
-                (now + timedelta(hours=4)).isoformat(timespec="seconds"),
-                args.reason,
-                json.dumps(minimized, ensure_ascii=False),
-            ),
+    output = Path(args.output) if args.output else None
+    try:
+        result = enter_recovery_mode(
+            reason=args.reason,
+            duration_hours=args.duration_hours,
+            output=output,
+            apply=not args.dry_run,
         )
-        conn.commit()
-    print("오늘 계획을 현재 상태에 맞게 줄입니다.")
-    print("다음 행동은 3분짜리입니다.")
-    print(minimized["next_action"])
-    return 0
+    except ValueError as exc:
+        print(str(exc))
+        return 2
 
+    plan = result.plan
+    mode = "entered" if result.applied else "previewed"
+    print(f"Recovery mode {mode}.")
+    if result.session_id is not None:
+        print(f"Recovery session: #{result.session_id}")
+    print(f"Prompt written: {result.prompt_path}")
+    print(f"Protected blocks: {len(plan['protected_blocks'])}")
+    print(f"Deferred blocks: {len(plan['deferred_blocks'])}")
+    print(f"Deferred tasks: {len(plan['deferred_tasks'])}")
+    print(f"Next action: {plan['next_action']}")
+    return 0
 
 def cmd_write_daily_summary(args: argparse.Namespace) -> int:
     init_db()
@@ -211,6 +208,9 @@ def build_parser() -> argparse.ArgumentParser:
 
     recovery = sub.add_parser("enter-recovery-mode")
     recovery.add_argument("--reason", required=True)
+    recovery.add_argument("--duration-hours", type=int, default=4)
+    recovery.add_argument("--output")
+    recovery.add_argument("--dry-run", action="store_true")
     recovery.set_defaults(func=cmd_enter_recovery_mode)
 
     daily = sub.add_parser("write-daily-summary")

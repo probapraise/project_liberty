@@ -34,7 +34,13 @@
 
 ## Stage 3
 
+진행 중/완료:
 - recovery mode 실제 계획 축소
+- recovery session 기록
+- recovery prompt 생성
+- 비필수 schedule block/task defer
+
+남음:
 - exception workflow
 - daily summary
 - weekly pattern analysis using `codex exec`

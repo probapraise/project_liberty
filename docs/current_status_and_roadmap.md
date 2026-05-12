@@ -171,6 +171,7 @@ LifeOps Codex Operator는 사용자의 별도 AI 앱이 아니라, Codex CLI/Cod
 11. `8e2c3cc Fallback to Startup launcher for autostart`
 12. `5dea975 Fix scheduled task run level`
 13. `d6b175a Add intervention loop self-check`
+14. `2f40e06 Document Stage 2 self-check results`
 
 이 문서 이후의 최신 커밋은 `git log --oneline`으로 확인한다. 앞으로도 기능이 완성될 때마다 의미 단위로 로컬 커밋을 만들고, 사용자가 직접 `git push origin main`을 실행한다.
 
@@ -211,13 +212,23 @@ Windows 로그인 후 Start-LifeOps가 watcher, dispatcher, Codex boot briefing�
 
 반복 이탈, 피로, 과부하 상황에서 남은 하루 계획을 자동으로 축소하고 다음 3-5분 행동만 남긴다.
 
-해야 할 일:
+구현 완료:
 
-- recovery session 기록 확장
-- 현재 계획 블록과 남은 task를 축소 계획으로 변환
-- 수면, 식사, 복약, 위생, 고정 일정 보호
+- `src/lifeops/recovery.py`
+- `scripts/Enter-RecoveryMode.ps1`
+- `python -m lifeops.cli enter-recovery-mode --reason ...`
+- recovery session 기록
+- 남은 비필수 schedule block을 `cancelled`로 전환
+- 남은 비필수 task를 `deferred_recovery`로 전환
+- 수면, 식사, 복약, 위생, 고정 일정, work block 보호
 - recovery prompt 생성
-- recovery decision 기록
+- dry-run preview 지원
+
+남음:
+
+- 실제 사용자 PowerShell에서 dry-run과 적용 결과 확인
+- recovery decision을 intervention decision 흐름과 더 직접 연결
+- exception workflow와 daily summary에 recovery usage 반영
 
 완료 기준:
 
@@ -308,7 +319,7 @@ Codex가 LifeOps 상태를 더 안정적으로 읽고 기록할 수 있는 tool 
 3. `data/runtime/watcher.pid`와 `data/runtime/dispatcher.pid`가 생겼는지 확인한다
 4. `scripts/Test-StartupFlow.ps1 -CheckScheduledTask`를 다시 실행한다
 5. Codex boot briefing 창이 열렸는지 확인한다
-6. 문제가 없으면 Stage 3-A recovery mode 실사용화로 넘어간다
-7. 로컬 커밋: `Verify LifeOps logon startup`
+6. 문제가 없으면 `scripts/Enter-RecoveryMode.ps1 -Reason fatigue -DryRun`으로 recovery preview를 확인한다
+7. 로컬 커밋: `Implement recovery mode`
 
 이 작업이 끝나면 Stage 2의 핵심 루프를 실제 Windows 로그인 환경에서 신뢰할 수 있게 된다.

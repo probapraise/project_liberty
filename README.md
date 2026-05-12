@@ -60,6 +60,20 @@ pwsh -NoProfile -ExecutionPolicy Bypass -File .\scripts\Test-InterventionLoop.ps
 pwsh -NoProfile -ExecutionPolicy Bypass -File .\scripts\Test-InterventionLoop.ps1 -Choice intentional_rest -DurationMinutes 1
 ```
 
+## Recovery mode
+
+남은 하루를 최소안으로 줄이고, 비필수 블록/작업을 미루며, recovery prompt를 생성한다.
+
+```powershell
+pwsh -NoProfile -ExecutionPolicy Bypass -File .\scripts\Enter-RecoveryMode.ps1 -Reason fatigue
+```
+
+먼저 결과만 보고 싶으면 실제 DB 상태를 바꾸지 않는 dry-run을 쓴다.
+
+```powershell
+pwsh -NoProfile -ExecutionPolicy Bypass -File .\scripts\Enter-RecoveryMode.ps1 -Reason overload -DryRun
+```
+
 `codex_cli` 경고가 뜨면 Codex CLI 경로를 환경변수로 고정할 수 있다.
 
 ```powershell
