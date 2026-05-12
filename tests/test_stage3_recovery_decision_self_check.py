@@ -29,7 +29,8 @@ class Stage3RecoveryDecisionSelfCheckTests(unittest.TestCase):
         self.assertEqual(result["event_status"], "decided")
         self.assertEqual(result["protected_block_status"], "planned")
         self.assertEqual(result["optional_block_status"], "cancelled")
-        self.assertEqual(result["task_status"], "deferred_recovery")
+        self.assertEqual(result["kept_task_status"], "pending")
+        self.assertEqual(result["deferred_task_status"], "deferred_recovery")
         self.assertEqual(result["decision_count"], 1)
         self.assertEqual(result["exception_count"], 1)
         self.assertEqual(result["recovery_session_count"], 1)
@@ -38,7 +39,8 @@ class Stage3RecoveryDecisionSelfCheckTests(unittest.TestCase):
         result = run_recovery_decision_self_check(recovery_dry_run=True)
         self.assertEqual(result["status"], "pass")
         self.assertEqual(result["optional_block_status"], "planned")
-        self.assertEqual(result["task_status"], "pending")
+        self.assertEqual(result["kept_task_status"], "pending")
+        self.assertEqual(result["deferred_task_status"], "pending")
         self.assertEqual(result["recovery_session_count"], 0)
 
 

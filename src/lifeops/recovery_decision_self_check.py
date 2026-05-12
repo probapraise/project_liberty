@@ -63,14 +63,14 @@ def _insert_block(*, now: datetime, title: str, block_type: str, start_offset: i
         return int(cursor.lastrowid)
 
 
-def _insert_task(today: str) -> int:
+def _insert_task(*, today: str, title: str, priority: str) -> int:
     with connect() as conn:
         cursor = conn.execute(
             """
             INSERT INTO tasks(title, priority, estimated_minutes, due_date, status)
-            VALUES ('LifeOps recovery self-check optional task', 'low', 30, ?, 'pending')
+            VALUES (?, ?, 30, ?, 'pending')
             """,
-            (today,),
+            (title, priority, today),
         )
         conn.commit()
         return int(cursor.lastrowid)
@@ -139,12 +139,20 @@ def _insert_intervention(activity_id: int, schedule_block_id: int) -> int:
     return event_id
 
 
-def _fetch_statuses(*, event_id: int, protected_block_id: int, optional_block_id: int, task_id: int) -> dict[str, object]:
+def _fetch_statuses(
+    *,
+    event_id: int,
+    protected_block_id: int,
+    optional_block_id: int,
+    kept_task_id: int,
+    deferred_task_id: int,
+) -> dict[str, object]:
     with connect() as conn:
         event = conn.execute("SELECT status FROM intervention_events WHERE id = ?", (event_id,)).fetchone()
         protected_block = conn.execute("SELECT status FROM schedule_blocks WHERE id = ?", (protected_block_id,)).fetchone()
         optional_block = conn.execute("SELECT status FROM schedule_blocks WHERE id = ?", (optional_block_id,)).fetchone()
-        task = conn.execute("SELECT status FROM tasks WHERE id = ?", (task_id,)).fetchone()
+        kept_task = conn.execute("SELECT status FROM tasks WHERE id = ?", (kept_task_id,)).fetchone()
+        deferred_task = conn.execute("SELECT status FROM tasks WHERE id = ?", (deferred_task_id,)).fetchone()
         decisions = conn.execute("SELECT COUNT(*) AS count FROM intervention_decisions").fetchone()
         exceptions = conn.execute("SELECT COUNT(*) AS count FROM exceptions").fetchone()
         recovery_sessions = conn.execute("SELECT COUNT(*) AS count FROM recovery_sessions").fetchone()
@@ -152,7 +160,8 @@ def _fetch_statuses(*, event_id: int, protected_block_id: int, optional_block_id
         "event_status": event["status"],
         "protected_block_status": protected_block["status"],
         "optional_block_status": optional_block["status"],
-        "task_status": task["status"],
+        "kept_task_status": kept_task["status"],
+        "deferred_task_status": deferred_task["status"],
         "decision_count": int(decisions["count"]),
         "exception_count": int(exceptions["count"]),
         "recovery_session_count": int(recovery_sessions["count"]),
@@ -187,7 +196,16 @@ def run_recovery_decision_self_check(
             start_offset=35,
             end_offset=65,
         )
-        task_id = _insert_task(now.date().isoformat())
+        kept_task_id = _insert_task(
+            today=now.date().isoformat(),
+            title="LifeOps recovery self-check required task",
+            priority="high",
+        )
+        deferred_task_id = _insert_task(
+            today=now.date().isoformat(),
+            title="LifeOps recovery self-check optional task",
+            priority="low",
+        )
         activity_id = _insert_activity()
         event_id = _insert_intervention(activity_id, protected_block_id)
         args = SimpleNamespace(
@@ -210,17 +228,19 @@ def run_recovery_decision_self_check(
             event_id=event_id,
             protected_block_id=protected_block_id,
             optional_block_id=optional_block_id,
-            task_id=task_id,
+            kept_task_id=kept_task_id,
+            deferred_task_id=deferred_task_id,
         )
         expected_optional = "planned" if recovery_dry_run else "cancelled"
-        expected_task = "pending" if recovery_dry_run else "deferred_recovery"
+        expected_deferred_task = "pending" if recovery_dry_run else "deferred_recovery"
         expected_recovery_sessions = 0 if recovery_dry_run else 1
         checks = {
             "cli_exit_code": cli_exit_code == 0,
             "event_decided": statuses["event_status"] == "decided",
             "protected_block_preserved": statuses["protected_block_status"] == "planned",
             "optional_block_handled": statuses["optional_block_status"] == expected_optional,
-            "task_handled": statuses["task_status"] == expected_task,
+            "kept_task_preserved": statuses["kept_task_status"] == "pending",
+            "deferred_task_handled": statuses["deferred_task_status"] == expected_deferred_task,
             "decision_recorded": statuses["decision_count"] == 1,
             "exception_recorded": statuses["exception_count"] == 1,
             "recovery_session_count": statuses["recovery_session_count"] == expected_recovery_sessions,
@@ -233,7 +253,8 @@ def run_recovery_decision_self_check(
             "activity_id": activity_id,
             "protected_block_id": protected_block_id,
             "optional_block_id": optional_block_id,
-            "task_id": task_id,
+            "kept_task_id": kept_task_id,
+            "deferred_task_id": deferred_task_id,
             "choice": choice,
             "recovery_dry_run": recovery_dry_run,
             "cli_output": [line for line in cli_output.getvalue().splitlines() if line],

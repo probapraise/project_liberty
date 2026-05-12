@@ -28,3 +28,4 @@ data/events/*.jsonl
 data/daily/*.md
 data/proposals/*.md
 data/runtime/*.json
+data/runtime/recovery_decision_self_check/
