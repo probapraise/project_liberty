@@ -10,6 +10,7 @@ data/runtime/*.pid
 data/runtime/*.log
 data/exports/boot_briefing_context.md
 data/exports/boot_prompt.md
+data/exports/intervention_prompt_*.md
 
 *.tmp
 *.bak

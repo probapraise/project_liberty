@@ -24,12 +24,13 @@
 - watcher/dispatcher 1회 실행 옵션
 - startup flow self-check 스크립트
 - intervention loop self-check 스크립트
+- 사용자 PowerShell startup self-check PASS 확인
+- 사용자 PowerShell intervention loop self-check PASS 확인
 
 남음:
 - 반복 개입 UX 다듬기
 - 실제 Chrome/Steam 사용 중 개입 루프 관찰
-- 사용자 PowerShell에서 startup self-check 실행 결과 확인
-- 실제 로그인 자동 시작 환경에서 watcher/dispatcher end-to-end 점검
+- 재로그인/재부팅 후 Startup launcher 실제 실행 확인
 
 ## Stage 3
 
