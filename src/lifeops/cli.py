@@ -1,4 +1,4 @@
-﻿from __future__ import annotations
+from __future__ import annotations
 
 import argparse
 import json
@@ -6,7 +6,8 @@ from datetime import datetime, timedelta, timezone
 from pathlib import Path
 
 from .boot import write_boot_context, write_boot_prompt
-from .db import connect, init_db, table_names, utc_now
+from .db import connect, init_db, table_names
+from .decision_logging import decision_help_text, record_intervention_decision
 from .schedule_engine import format_block, get_current_block, get_fixed_obligations
 
 DEFAULT_TZ = timezone(timedelta(hours=9), "Asia/Seoul")
@@ -85,30 +86,26 @@ def cmd_get_pending_events(args: argparse.Namespace) -> int:
 
 def cmd_record_decision(args: argparse.Namespace) -> int:
     init_db()
-    with connect() as conn:
-        conn.execute(
-            """
-            INSERT INTO intervention_decisions(
-                event_id, timestamp, decision, category, duration_minutes,
-                user_text_summary, followup_action
-            ) VALUES (?, ?, ?, ?, ?, ?, ?)
-            """,
-            (
-                args.event_id,
-                utc_now(),
-                args.decision,
-                args.category,
-                args.duration_minutes,
-                args.reason,
-                args.followup_action,
-            ),
+    choice = args.choice or args.decision
+    if not choice:
+        print("결정 선택지가 필요합니다. 사용 가능한 선택지:")
+        print(decision_help_text())
+        return 2
+    try:
+        payload = record_intervention_decision(
+            args.event_id,
+            choice,
+            category=args.category,
+            reason=args.reason,
+            duration_minutes=args.duration_minutes,
+            followup_action=args.followup_action,
         )
-        conn.execute(
-            "UPDATE intervention_events SET status = 'decided' WHERE id = ?",
-            (args.event_id,),
-        )
-        conn.commit()
-    print(f"Decision recorded for event #{args.event_id}: {args.decision}")
+    except (LookupError, ValueError) as exc:
+        print(str(exc))
+        return 2
+    print(f"Decision recorded for event #{args.event_id}: {payload['decision']} ({payload['category']})")
+    if payload.get("exception_id") is not None:
+        print(f"Exception recorded: #{payload['exception_id']}")
     return 0
 
 
@@ -204,11 +201,12 @@ def build_parser() -> argparse.ArgumentParser:
 
     decision = sub.add_parser("record-decision")
     decision.add_argument("--event-id", type=int, required=True)
-    decision.add_argument("--decision", required=True)
+    decision.add_argument("--choice", help="Canonical choice code such as return_now, intentional_rest, fatigue, health, overload, adjust_plan, false_positive")
+    decision.add_argument("--decision", help="Backward-compatible alias for --choice")
     decision.add_argument("--category")
     decision.add_argument("--reason", default="")
     decision.add_argument("--duration-minutes", type=int)
-    decision.add_argument("--followup-action", default="")
+    decision.add_argument("--followup-action")
     decision.set_defaults(func=cmd_record_decision)
 
     recovery = sub.add_parser("enter-recovery-mode")
@@ -230,5 +228,3 @@ def main(argv: list[str] | None = None) -> int:
 
 if __name__ == "__main__":
     raise SystemExit(main())
-
-

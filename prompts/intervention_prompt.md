@@ -26,4 +26,13 @@
 4. 계획 자체를 수정
 5. 오탐으로 표시
 
-응답 후에는 선택을 기록하고, 판단하거나 훈계하지 않는다.
+응답 후에는 아래 선택지 코드 중 하나로 기록하고, 판단하거나 훈계하지 않는다.
+
+기록 코드:
+- `return_now`
+- `intentional_rest`
+- `fatigue`
+- `health`
+- `overload`
+- `adjust_plan`
+- `false_positive`

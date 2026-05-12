@@ -135,7 +135,7 @@ LifeOps Codex Operator는 사용자의 별도 AI 앱이 아니라, Codex CLI/Cod
 - `tests/test_stage2_activity.py`
 - `tests/test_stage2_dispatcher.py`
 
-현재 watcher는 감지와 기록을 하고, dispatcher는 pending 이벤트를 루멘 intervention prompt로 만들어 Codex 창으로 전달한다. 남은 핵심은 사용자의 응답을 더 안정적으로 기록하고 복구/예외 흐름과 연결하는 것이다.
+현재 watcher는 감지와 기록을 하고, dispatcher는 pending 이벤트를 루멘 intervention prompt로 만들어 Codex 창으로 전달한다. 사용자의 응답은 고정 선택지 코드로 기록되며, 휴식/피로/건강/과부하/계획 수정은 예외 기록과 연결된다. 남은 Stage 2 핵심은 실제 로그인 자동 시작 환경에서 전체 루프를 점검하는 것이다.
 
 ### 오퍼레이터 persona 완료
 
@@ -155,6 +155,7 @@ LifeOps Codex Operator는 사용자의 별도 AI 앱이 아니라, Codex CLI/Cod
 3. `40df891 Implement Chrome and Steam activity watcher`
 4. `5d39086 Define LifeOps operator persona`
 5. `4742b1c Document current status and roadmap`
+6. `2952b8b Implement intervention dispatcher`
 
 이 문서 이후의 최신 커밋은 `git log --oneline`으로 확인한다. 앞으로도 기능이 완성될 때마다 의미 단위로 로컬 커밋을 만들고, 사용자가 직접 `git push origin main`을 실행한다.
 
@@ -168,26 +169,7 @@ LifeOps Codex Operator는 사용자의 별도 AI 앱이 아니라, Codex CLI/Cod
 
 ## 다음 작업 목록
 
-### 1. Stage 2-C: decision logging UX 정리
-
-목표:
-
-사용자가 개입에 응답했을 때 선택지를 안정적으로 DB에 기록하고, 이후 복구/예외 흐름의 근거로 쓸 수 있게 한다.
-
-해야 할 일:
-
-- `record-decision` CLI를 선택지 코드 중심으로 정리
-- 선택지 순서와 category를 persona 문서와 맞춤
-- false positive, intentional rest, fatigue, health, overload, schedule change를 명확히 분리
-- decision 기록 후 event status 전환 규칙 정리
-- decision JSONL 또는 daily summary 반영
-
-완료 기준:
-
-- 사용자의 선택 하나로 DB 상태가 일관되게 바뀐다.
-- 판단/훈계 문구 없이 기록된다.
-
-### 2. Stage 2-D: 실제 부팅/로그온 동작 점검
+### 1. Stage 2-D: 실제 부팅/로그온 동작 점검
 
 목표:
 
@@ -207,7 +189,7 @@ Windows 로그인 후 Start-LifeOps가 watcher, dispatcher, Codex boot briefing�
 - 사용자가 직접 실행하지 않아도 로그인 후 LifeOps가 시작된다.
 - 실패 시 원인을 `data/runtime/startup.log`에서 확인할 수 있다.
 
-### 3. Stage 3-A: recovery mode 실사용화
+### 2. Stage 3-A: recovery mode 실사용화
 
 목표:
 
@@ -226,7 +208,7 @@ Windows 로그인 후 Start-LifeOps가 watcher, dispatcher, Codex boot briefing�
 - 사용자가 회복 모드를 선택하면 남은 하루가 작게 재구성된다.
 - 죄책감/벌칙 없이 다음 행동이 생성된다.
 
-### 4. Stage 3-B: daily summary와 weekly review
+### 3. Stage 3-B: daily summary와 weekly review
 
 목표:
 
@@ -245,7 +227,7 @@ Windows 로그인 후 Start-LifeOps가 watcher, dispatcher, Codex boot briefing�
 - 매일 짧은 운영 요약이 생성된다.
 - 주간 리뷰에서 시스템 조정 제안이 최대 3개 생성된다.
 
-### 5. Stage 4: Chrome extension과 Native Messaging
+### 4. Stage 4: Chrome extension과 Native Messaging
 
 목표:
 
@@ -264,7 +246,7 @@ Chrome title 기반 추정을 넘어, Chrome 도메인만 안정적으로 보고
 - Chrome의 현재 도메인을 페이지 본문 없이 안전하게 기록한다.
 - 위험 도메인에서 마찰 또는 redirect가 가능하다.
 
-### 6. Stage 4 후반: calendar 연동
+### 5. Stage 4 후반: calendar 연동
 
 목표:
 
@@ -282,7 +264,7 @@ Chrome title 기반 추정을 넘어, Chrome 도메인만 안정적으로 보고
 - 고정 일정이 DB schedule_blocks에 반영된다.
 - 캘린더 연동은 LLM API와 무관하게 동작한다.
 
-### 7. Stage 5: MCP/tool 고도화
+### 6. Stage 5: MCP/tool 고도화
 
 목표:
 
@@ -301,15 +283,16 @@ Codex가 LifeOps 상태를 더 안정적으로 읽고 기록할 수 있는 tool 
 
 ## 다음 세션의 첫 권장 작업
 
-가장 먼저 할 일은 Stage 2-C다.
+가장 먼저 할 일은 Stage 2-D다.
 
 시작 순서:
 
-1. `src/lifeops/cli.py`의 `record-decision` 확인
-2. 선택지 코드와 category를 `docs/operator_persona.md`의 고정 선택지와 맞춘다
-3. decision 기록 후 event 상태, exception, recovery 흐름을 정리한다
-4. intervention prompt의 기록 안내를 실제 CLI 옵션과 맞춘다
-5. decision logging 테스트를 작성한다
-6. 로컬 커밋: `Improve intervention decision logging`
+1. 사용자 PowerShell에서 Python 3.12+와 Codex CLI 경로를 확인한다
+2. `scripts/Start-LifeOps.ps1`를 수동 실행한다
+3. watcher/dispatcher pid 파일과 runtime 로그를 확인한다
+4. `Run-Watcher.ps1`와 `Run-EventDispatcher.ps1 -DryRun`으로 안전한 end-to-end 점검을 한다
+5. pending event 생성 -> prompt 생성 -> decision 기록까지 한 번 수동으로 통과시킨다
+6. 필요하면 로그 회전/오류 메시지를 정리한다
+7. 로컬 커밋: `Verify LifeOps startup flow`
 
-이 작업이 끝나면 Chrome/Steam 감지 -> pending event -> Codex intervention 창 -> 사용자 선택 기록까지 Stage 2의 핵심 루프가 이어진다.
+이 작업이 끝나면 Stage 2의 핵심 루프를 실제 Windows 로그인 환경에서 신뢰할 수 있게 된다.

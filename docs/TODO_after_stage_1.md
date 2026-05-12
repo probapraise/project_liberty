@@ -18,10 +18,11 @@
 - pending intervention event 생성
 - Codex intervention prompt 렌더링
 - intervention dispatcher가 pending event를 Codex 창으로 전달
-- decision logging 기본 CLI 유지
+- decision logging 기본 CLI
+- 선택지 코드 기반 decision logging UX
+- 휴식/피로/건강/과부하/계획 수정 선택을 exception 기록과 연결
 
 남음:
-- decision logging UX 확장
 - 반복 개입 UX 다듬기
 - 실제 로그인 자동 시작 환경에서 watcher/dispatcher end-to-end 점검
 
