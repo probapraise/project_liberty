@@ -124,12 +124,18 @@ if ($CheckScheduledTask) {
     try {
         $task = Get-ScheduledTask -TaskName 'LifeOpsCodexOperator' -ErrorAction SilentlyContinue
         if ($task) {
-            Add-StartupCheckResult -Name 'scheduled_task' -Status 'PASS' -Detail $task.State.ToString()
+            Add-StartupCheckResult -Name 'startup_registration' -Status 'PASS' -Detail "scheduled task: $($task.State.ToString())"
+        } elseif (Test-LifeOpsStartupLauncherInstalled) {
+            Add-StartupCheckResult -Name 'startup_registration' -Status 'PASS' -Detail 'Startup folder launcher installed'
         } else {
-            Add-StartupCheckResult -Name 'scheduled_task' -Status 'WARN' -Detail 'LifeOpsCodexOperator is not installed'
+            Add-StartupCheckResult -Name 'startup_registration' -Status 'WARN' -Detail 'no scheduled task or Startup folder launcher installed'
         }
     } catch {
-        Add-StartupCheckResult -Name 'scheduled_task' -Status 'WARN' -Detail $_.Exception.Message
+        if (Test-LifeOpsStartupLauncherInstalled) {
+            Add-StartupCheckResult -Name 'startup_registration' -Status 'PASS' -Detail 'Startup folder launcher installed'
+        } else {
+            Add-StartupCheckResult -Name 'startup_registration' -Status 'WARN' -Detail $_.Exception.Message
+        }
     }
 }
 

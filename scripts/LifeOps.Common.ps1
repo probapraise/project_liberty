@@ -153,6 +153,52 @@ function Start-LifeOpsManagedProcess {
     Write-LifeOpsLog "$Name started with pid $($process.Id)."
 }
 
+function Get-LifeOpsStartupLauncherPath {
+    $startupDir = [Environment]::GetFolderPath('Startup')
+    if (-not $startupDir) {
+        throw 'Current user Startup folder was not found.'
+    }
+    return (Join-Path $startupDir 'LifeOpsCodexOperator.cmd')
+}
+
+function Install-LifeOpsStartupLauncher {
+    param(
+        [Parameter(Mandatory=$true)][string]$PowerShellPath,
+        [Parameter(Mandatory=$true)][string]$StartScript
+    )
+
+    $launcherPath = Get-LifeOpsStartupLauncherPath
+    $launcherDir = Split-Path -Parent $launcherPath
+    New-Item -ItemType Directory -Path $launcherDir -Force | Out-Null
+    $launchCommand = 'start "" /min "{0}" -NoProfile -ExecutionPolicy Bypass -File "{1}"' -f $PowerShellPath, $StartScript
+    $content = @(
+        '@echo off',
+        $launchCommand
+    )
+    Set-Content -LiteralPath $launcherPath -Value $content -Encoding ASCII
+    Write-LifeOpsLog "Installed Startup folder launcher: $launcherPath"
+    return $launcherPath
+}
+
+function Remove-LifeOpsStartupLauncher {
+    $launcherPath = Get-LifeOpsStartupLauncherPath
+    if (Test-Path -LiteralPath $launcherPath) {
+        Remove-Item -LiteralPath $launcherPath -Force
+        Write-LifeOpsLog "Removed Startup folder launcher: $launcherPath"
+        return $true
+    }
+    return $false
+}
+
+function Test-LifeOpsStartupLauncherInstalled {
+    try {
+        $launcherPath = Get-LifeOpsStartupLauncherPath
+        return (Test-Path -LiteralPath $launcherPath)
+    } catch {
+        return $false
+    }
+}
+
 function Show-LifeOpsNotification {
     param(
         [Parameter(Mandatory=$true)][string]$Title,

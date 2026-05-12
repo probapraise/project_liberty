@@ -75,7 +75,7 @@ LifeOps Codex Operator는 사용자의 별도 AI 앱이 아니라, Codex CLI/Cod
 - SQLite DB 스키마
 - JSONL 이벤트 로그 디렉터리
 - 부팅 브리핑 컨텍스트/프롬프트 생성
-- Windows 로그온 자동 시작 설치/삭제 스크립트
+- Windows 로그온 자동 시작 설치/삭제 스크립트, 권한 제한 시 Startup 폴더 fallback
 - watcher/dispatcher 실행 스크립트
 - 기본 CLI
 - Stage 1 테스트
@@ -181,7 +181,7 @@ Windows 로그인 후 Start-LifeOps가 watcher, dispatcher, Codex boot briefing�
 
 해야 할 일:
 
-- `Install-StartupTask.ps1` 실제 등록 테스트
+- `Install-StartupTask.ps1` 실제 등록 테스트, 권한 거부 시 Startup 폴더 fallback 확인
 - task scheduler 동작 확인
 - watcher/dispatcher pid 파일 확인
 - `Test-StartupFlow.ps1 -CheckScheduledTask` self-check 결과 확인
@@ -296,7 +296,7 @@ Codex가 LifeOps 상태를 더 안정적으로 읽고 기록할 수 있는 tool 
 2. `scripts/Test-StartupFlow.ps1 -CheckScheduledTask`를 실행하고 `data/runtime/startup_check.json`을 확인한다
 3. 실패 항목이 있으면 Python/Codex PATH, LIFEOPS_CODEX, 또는 startup script를 조정한다
 4. `scripts/Start-LifeOps.ps1`를 수동 실행해 watcher/dispatcher pid 파일과 runtime 로그를 확인한다
-5. 실제 로그온 자동 시작을 설치하고 다음 로그인에서 동작을 확인한다
+5. 실제 로그온 자동 시작을 설치하고 `startup_registration` PASS를 확인한 뒤 다음 로그인에서 동작을 확인한다
 6. pending event 생성 -> prompt 생성 -> decision 기록까지 한 번 수동으로 통과시킨다
 7. 로컬 커밋: `Verify LifeOps startup flow`
 

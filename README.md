@@ -63,7 +63,7 @@ npm 전역 설치를 쓴 환경이면 `$env:APPDATA\npm\codex.cmd`를 대신 지
 powershell -NoProfile -ExecutionPolicy Bypass -File .\scripts\Install-StartupTask.ps1
 ```
 
-설치 후 Windows 로그인 시 `scripts/Start-LifeOps.ps1`이 실행된다.
+설치 후 Windows 로그인 시 `scripts/Start-LifeOps.ps1`이 실행된다. 예약 작업 등록이 권한 때문에 실패하면 사용자 Startup 폴더 런처로 자동 fallback한다.
 
 ## 자동 시작 제거
 
