@@ -39,10 +39,12 @@
 - recovery session 기록
 - recovery prompt 생성
 - 비필수 schedule block/task defer
+- intervention decision에서 recovery mode로 이어지는 명시 옵션
+- daily summary에 recovery usage와 exception category 반영
 
 남음:
-- exception workflow
-- daily summary
+- 실제 적용 모드 사용자 검증
+- daily summary 품질 개선
 - weekly pattern analysis using `codex exec`
 
 ## Stage 4

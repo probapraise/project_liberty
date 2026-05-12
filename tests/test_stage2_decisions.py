@@ -4,11 +4,13 @@ import os
 import shutil
 import tempfile
 import unittest
+from types import SimpleNamespace
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
 
 from lifeops.activity_watcher import process_snapshot
 from lifeops.db import connect, init_db, utc_now
+from lifeops.cli import cmd_record_decision
 from lifeops.decision_logging import normalize_decision, record_intervention_decision
 from lifeops.models import ActivitySnapshot
 
@@ -55,6 +57,21 @@ class Stage2DecisionLoggingTests(unittest.TestCase):
         _, decision = process_snapshot(snapshot)
         self.assertEqual(decision.action, "intervene")
 
+    def _insert_current_optional_block(self) -> int:
+        now = datetime.now(DEFAULT_TZ)
+        start = (now - timedelta(minutes=5)).strftime("%H:%M")
+        end = (now + timedelta(minutes=30)).strftime("%H:%M")
+        with connect() as conn:
+            cursor = conn.execute(
+                """
+                INSERT INTO schedule_blocks(date, start_time, end_time, type, title, enforcement_level)
+                VALUES (?, ?, ?, 'study', 'optional review', 'normal')
+                """,
+                (now.date().isoformat(), start, end),
+            )
+            conn.commit()
+            return int(cursor.lastrowid)
+
     def test_aliases_normalize_to_canonical_choices(self) -> None:
         self.assertEqual(normalize_decision("1").code, "return_now")
         self.assertEqual(normalize_decision("false-positive").code, "false_positive")
@@ -99,6 +116,53 @@ class Stage2DecisionLoggingTests(unittest.TestCase):
         record_intervention_decision(1, "return_now")
         with self.assertRaises(ValueError):
             record_intervention_decision(1, "false_positive")
+
+    def test_cli_rejects_recovery_mode_for_return_now(self) -> None:
+        args = SimpleNamespace(
+            event_id=1,
+            choice="return_now",
+            decision=None,
+            category=None,
+            reason="back to work",
+            duration_minutes=None,
+            followup_action=None,
+            enter_recovery_mode=True,
+            recovery_duration_hours=2,
+            recovery_output=None,
+            recovery_dry_run=False,
+        )
+        self.assertEqual(cmd_record_decision(args), 2)
+        with connect() as conn:
+            decisions = conn.execute("SELECT COUNT(*) AS count FROM intervention_decisions").fetchone()
+            recovery_sessions = conn.execute("SELECT COUNT(*) AS count FROM recovery_sessions").fetchone()
+        self.assertEqual(decisions["count"], 0)
+        self.assertEqual(recovery_sessions["count"], 0)
+
+    def test_cli_decision_can_enter_recovery_mode(self) -> None:
+        optional_block = self._insert_current_optional_block()
+        args = SimpleNamespace(
+            event_id=1,
+            choice="fatigue",
+            decision=None,
+            category=None,
+            reason="too tired to continue normally",
+            duration_minutes=30,
+            followup_action=None,
+            enter_recovery_mode=True,
+            recovery_duration_hours=2,
+            recovery_output=None,
+            recovery_dry_run=False,
+        )
+        self.assertEqual(cmd_record_decision(args), 0)
+        with connect() as conn:
+            block = conn.execute("SELECT status FROM schedule_blocks WHERE id = ?", (optional_block,)).fetchone()
+            recovery_sessions = conn.execute("SELECT COUNT(*) AS count FROM recovery_sessions").fetchone()
+            decisions = conn.execute("SELECT COUNT(*) AS count FROM intervention_decisions").fetchone()
+            exceptions = conn.execute("SELECT COUNT(*) AS count FROM exceptions").fetchone()
+        self.assertEqual(block["status"], "cancelled")
+        self.assertEqual(recovery_sessions["count"], 1)
+        self.assertEqual(decisions["count"], 1)
+        self.assertEqual(exceptions["count"], 1)
 
 
 if __name__ == "__main__":

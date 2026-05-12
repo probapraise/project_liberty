@@ -80,6 +80,12 @@ pwsh -NoProfile -ExecutionPolicy Bypass -File .\scripts\Enter-RecoveryMode.ps1 -
 pwsh -NoProfile -ExecutionPolicy Bypass -File .\scripts\Enter-RecoveryMode.ps1 -Reason overload -DryRun
 ```
 
+개입 결정에서 바로 회복 모드까지 이어야 할 때는 아래처럼 기록한다.
+
+```powershell
+pwsh -NoProfile -ExecutionPolicy Bypass -File .\scripts\Record-InterventionDecision.ps1 -EventId 1 -Choice fatigue -DurationMinutes 30 -EnterRecoveryMode
+```
+
 `codex_cli` 경고가 뜨면 Codex CLI 경로를 환경변수로 고정할 수 있다.
 
 ```powershell

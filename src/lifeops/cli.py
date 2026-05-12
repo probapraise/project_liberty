@@ -7,7 +7,7 @@ from pathlib import Path
 
 from .boot import write_boot_context, write_boot_prompt
 from .db import connect, init_db, table_names
-from .decision_logging import decision_help_text, record_intervention_decision
+from .decision_logging import decision_help_text, normalize_decision, record_intervention_decision
 from .recovery import enter_recovery_mode
 from .schedule_engine import format_block, get_current_block, get_fixed_obligations
 
@@ -92,6 +92,18 @@ def cmd_record_decision(args: argparse.Namespace) -> int:
         print("결정 선택지가 필요합니다. 사용 가능한 선택지:")
         print(decision_help_text())
         return 2
+    if args.enter_recovery_mode:
+        try:
+            recovery_option = normalize_decision(choice)
+        except ValueError as exc:
+            print(str(exc))
+            return 2
+        if recovery_option.category not in {"fatigue", "health", "sensory_overload", "schedule_change"}:
+            print("--enter-recovery-mode is only for fatigue, health, overload, or adjust_plan decisions.")
+            return 2
+        if args.recovery_duration_hours <= 0:
+            print("recovery_duration_hours must be greater than zero.")
+            return 2
     try:
         payload = record_intervention_decision(
             args.event_id,
@@ -107,6 +119,22 @@ def cmd_record_decision(args: argparse.Namespace) -> int:
     print(f"Decision recorded for event #{args.event_id}: {payload['decision']} ({payload['category']})")
     if payload.get("exception_id") is not None:
         print(f"Exception recorded: #{payload['exception_id']}")
+
+    if args.enter_recovery_mode:
+        output = Path(args.recovery_output) if args.recovery_output else None
+        recovery_reason = args.reason or str(payload["label"])
+        recovery_result = enter_recovery_mode(
+            reason=f"intervention #{args.event_id}: {payload['category']} - {recovery_reason}",
+            duration_hours=args.recovery_duration_hours,
+            output=output,
+            apply=not args.recovery_dry_run,
+        )
+        recovery_mode = "entered" if recovery_result.applied else "previewed"
+        print(f"Recovery mode {recovery_mode} from event #{args.event_id}.")
+        if recovery_result.session_id is not None:
+            print(f"Recovery session: #{recovery_result.session_id}")
+        print(f"Recovery prompt: {recovery_result.prompt_path}")
+        print(f"Recovery next action: {recovery_result.plan['next_action']}")
     return 0
 
 
@@ -135,6 +163,7 @@ def cmd_enter_recovery_mode(args: argparse.Namespace) -> int:
     print(f"Next action: {plan['next_action']}")
     return 0
 
+
 def cmd_write_daily_summary(args: argparse.Namespace) -> int:
     init_db()
     now = datetime.now(DEFAULT_TZ)
@@ -151,13 +180,33 @@ def cmd_write_daily_summary(args: argparse.Namespace) -> int:
             """,
             (f"{now.date().isoformat()}%",),
         ).fetchone()["count"]
+        recovery_count = conn.execute(
+            "SELECT COUNT(*) AS count FROM recovery_sessions WHERE start_time LIKE ?",
+            (f"{now.date().isoformat()}%",),
+        ).fetchone()["count"]
+        exception_count = conn.execute(
+            "SELECT COUNT(*) AS count FROM exceptions WHERE start_time LIKE ?",
+            (f"{now.date().isoformat()}%",),
+        ).fetchone()["count"]
+        exception_rows = conn.execute(
+            """
+            SELECT category, COUNT(*) AS count FROM exceptions
+            WHERE start_time LIKE ?
+            GROUP BY category
+            ORDER BY count DESC, category
+            """,
+            (f"{now.date().isoformat()}%",),
+        ).fetchall()
+    exception_summary = ", ".join(f"{row['category']}={row['count']}" for row in exception_rows) or "none"
     text = "\n".join(
         [
             f"# Daily Summary {now.date().isoformat()}",
             "",
             f"- total_interventions: {intervention_count}",
             f"- false_positives: {false_positive_count}",
-            "- recovery_mode_usage: 확인 필요",
+            f"- recovery_mode_usage: {recovery_count}",
+            f"- exceptions: {exception_count}",
+            f"- exception_categories: {exception_summary}",
             "- sleep_boundary_incidents: 확인 필요",
             "",
             "점수 없음. 처벌 없음. 시스템 조정 참고용 요약입니다.",
@@ -204,6 +253,10 @@ def build_parser() -> argparse.ArgumentParser:
     decision.add_argument("--reason", default="")
     decision.add_argument("--duration-minutes", type=int)
     decision.add_argument("--followup-action")
+    decision.add_argument("--enter-recovery-mode", action="store_true", help="After recording the decision, also create a recovery-mode plan.")
+    decision.add_argument("--recovery-duration-hours", type=int, default=4)
+    decision.add_argument("--recovery-output")
+    decision.add_argument("--recovery-dry-run", action="store_true", help="Preview recovery mode without mutating schedule/tasks.")
     decision.set_defaults(func=cmd_record_decision)
 
     recovery = sub.add_parser("enter-recovery-mode")

@@ -180,6 +180,7 @@ def render_intervention_prompt(row: sqlite3.Row) -> str:
             f"- 건강 예외: `python -m lifeops.cli record-decision --event-id {row['event_id']} --choice health --duration-minutes 60`",
             f"- 과부하 예외: `python -m lifeops.cli record-decision --event-id {row['event_id']} --choice overload --duration-minutes 30`",
             f"- 계획 수정: `python -m lifeops.cli record-decision --event-id {row['event_id']} --choice adjust_plan`",
+            f"- 회복 모드까지 연결: 위 피로/건강/과부하/계획 수정 명령 끝에 `--enter-recovery-mode`를 붙인다.",
             f"- 오탐: `python -m lifeops.cli record-decision --event-id {row['event_id']} --choice false_positive`",
             "판단하거나 훈계하지 않는다. 루멘의 persona와 고정 선택지 순서를 유지한다.",
             "",
