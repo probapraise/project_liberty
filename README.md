@@ -35,7 +35,7 @@ Codex intervention prompt dispatch, decision logging 기본 UX, startup flow sel
 PowerShell에서 저장소 루트로 이동한 뒤 실행한다.
 
 ```powershell
-pwsh -ExecutionPolicy Bypass -File .\scripts\Start-LifeOps.ps1
+powershell -NoProfile -ExecutionPolicy Bypass -File .\scripts\Start-LifeOps.ps1
 ```
 
 ## Startup flow 점검
@@ -43,7 +43,7 @@ pwsh -ExecutionPolicy Bypass -File .\scripts\Start-LifeOps.ps1
 장시간 프로세스를 띄우지 않고 부팅 경로를 점검한다.
 
 ```powershell
-pwsh -ExecutionPolicy Bypass -File .\scripts\Test-StartupFlow.ps1 -CheckScheduledTask
+powershell -NoProfile -ExecutionPolicy Bypass -File .\scripts\Test-StartupFlow.ps1 -CheckScheduledTask
 ```
 
 이 스크립트는 DB 초기화, boot context/prompt 생성, watcher 1회 실행, dispatcher dry-run 1회 실행, Codex CLI/예약 작업 확인 결과를 `data/runtime/startup_check.json`에 남긴다.
@@ -51,7 +51,7 @@ pwsh -ExecutionPolicy Bypass -File .\scripts\Test-StartupFlow.ps1 -CheckSchedule
 ## 자동 시작 설치
 
 ```powershell
-pwsh -ExecutionPolicy Bypass -File .\scripts\Install-StartupTask.ps1
+powershell -NoProfile -ExecutionPolicy Bypass -File .\scripts\Install-StartupTask.ps1
 ```
 
 설치 후 Windows 로그인 시 `scripts/Start-LifeOps.ps1`이 실행된다.
@@ -59,7 +59,7 @@ pwsh -ExecutionPolicy Bypass -File .\scripts\Install-StartupTask.ps1
 ## 자동 시작 제거
 
 ```powershell
-pwsh -ExecutionPolicy Bypass -File .\scripts\Remove-StartupTask.ps1
+powershell -NoProfile -ExecutionPolicy Bypass -File .\scripts\Remove-StartupTask.ps1
 ```
 
 ## 주요 CLI
@@ -79,5 +79,5 @@ Stage 1 런처는 `.venv`가 없으면 Python 3.12+로 가상환경을 만든다
 
 ```powershell
 $env:LIFEOPS_PYTHON = "C:\Path\To\python.exe"
-pwsh -ExecutionPolicy Bypass -File .\scripts\Start-LifeOps.ps1
+powershell -NoProfile -ExecutionPolicy Bypass -File .\scripts\Start-LifeOps.ps1
 ```
