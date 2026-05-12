@@ -1,4 +1,4 @@
-﻿# LifeOps Codex Operator
+# LifeOps Codex Operator
 
 LifeOps Codex Operator는 Codex CLI/Codex app을 생활 운영 보조자로 사용하는 로컬 시스템이다. 별도 챗봇 GUI나 OpenAI API 직접 호출 없이, 로컬 DB와 스크립트가 Codex에게 필요한 상태만 전달한다.
 
@@ -14,6 +14,17 @@ LifeOps Codex Operator는 Codex CLI/Codex app을 생활 운영 보조자로 사�
 - Stage 2용 watcher/dispatcher 자리표시자
 
 브라우저 확장, 실제 브라우저 도메인 감지, 캘린더 API 연동은 Stage 1 이후 TODO로 남겨져 있다.
+
+## Stage 2 진행
+
+현재 watcher는 Windows foreground 창에서 Chrome/Steam만 감시한다.
+
+- Chrome: `chrome.exe`의 창 제목과 제목에서 확인 가능한 도메인 힌트만 기록한다.
+- Steam: `steam.exe`, `steamwebhelper.exe`, 그리고 Steam이 실행한 foreground 앱을 게임 활동의 단일 진입점으로 본다.
+- 감시 범위 밖 프로세스는 제목을 저장하지 않고 개입 대상으로 삼지 않는다. Steam 하위 앱은 개별 exe 목록 없이 `steam-launched-app`으로만 정규화한다.
+- 현재 계획 블록과 어긋나는 Steam 활동 또는 주의가 필요한 Chrome 활동은 `intervention_events`에 pending 상태로 기록한다.
+
+Codex intervention 창 실행은 다음 Stage 2 작업으로 남아 있다.
 
 ## 수동 1회 시작
 

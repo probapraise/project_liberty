@@ -1,2 +1,2 @@
-﻿# Stage 1 uses only the Python standard library.
-# Stage 2 may add psutil and pywin32 for foreground-window detection.
+# Stage 2 still uses only the Python standard library.
+# Windows foreground-window detection is implemented with ctypes.
