@@ -1,0 +1,331 @@
+# Current Status and Roadmap
+
+Last updated: 2026-05-12
+
+이 문서는 세션이 바뀌어도 LifeOps Codex Operator의 현재 목표, 완성된 범위, 다음 작업 순서를 빠르게 복구하기 위한 인계 문서다.
+
+## 핵심 목표
+
+LifeOps Codex Operator는 사용자의 별도 AI 앱이 아니라, Codex CLI/Codex app을 대화 표면으로 사용하는 로컬 생활 운영 시스템이다. 목표는 ADHD+ASD 혼재 성향 사용자가 매번 강한 의지나 긴 자기설명 없이도 평균 이상으로 생활 운영을 이어가도록 돕는 것이다.
+
+시스템은 사용자를 평가하거나 통제하는 권위자가 아니다. 사용자가 사전에 위임한 규칙을 기억하고, 계획과 실제 행동의 차이를 감지하며, 필요한 순간에 복구 가능한 다음 행동을 제시하는 deterministic substrate + Codex Operator 구조다.
+
+## 절대 조건
+
+- 대화 주체는 Codex CLI 또는 Codex app이어야 한다.
+- 별도 챗봇 GUI를 만들지 않는다.
+- ChatGPT 웹 UI를 자동으로 열지 않는다.
+- OpenAI SDK 또는 `api.openai.com` 직접 호출 코드를 만들지 않는다.
+- 키 입력, 스크린샷, 브라우저 페이지 본문을 수집하지 않는다.
+- 실패 횟수, 벌점, 생산성 점수, 무결점 streak를 표시하지 않는다.
+- 사용자가 승인하지 않은 생활 규칙, 차단 규칙, 스케줄 정책 변경을 자동 적용하지 않는다.
+- 반복 이탈은 사용자 문제가 아니라 시스템 조정 신호로 본다.
+
+## 현재 단순화된 감시 범위
+
+현재 시스템은 감시 범위를 Chrome과 Steam으로 제한한다.
+
+- Chrome: `chrome.exe`
+- Steam: `steam.exe`, `steamwebhelper.exe`
+- 모든 게임은 Steam에 등록해서 실행한다고 가정한다.
+- Steam이 실행한 foreground 앱은 개별 exe 목록 없이 `steam-launched-app`으로 정규화한다.
+- Edge, Firefox, Brave, Epic, Riot, Battle.net, GOG, 개별 게임 exe 카탈로그는 기본 감시 대상이 아니다.
+- 감시 범위 밖 프로세스는 창 제목을 저장하지 않고 개입 대상으로 삼지 않는다.
+
+이 범위를 넓히는 변경은 자동 적용하지 말고 시스템 조정 제안으로만 남긴다.
+
+## 오퍼레이터 정체성
+
+오퍼레이터 이름은 `루멘(Lumen)`이다.
+
+루멘은 차분한 계약 기반 실행 코치다. 핵심 역할은 사용자가 사전에 위임한 규칙을 기억하고, 현재 상황을 실행 가능한 다음 행동으로 바꾸는 것이다.
+
+기준 문서:
+
+- `docs/operator_persona.md`
+- `AGENTS.md`
+- `.agents/skills/lifeops-operator/references/shame_safe_language.md`
+- `.agents/skills/lifeops-operator/references/adhd_asd_principles.md`
+
+루멘의 기본 문법은 다음 순서를 따른다.
+
+1. 관찰
+2. 충돌 설명
+3. 선택지
+4. 다음 행동
+
+## 완료된 범위
+
+### Stage 1: 로컬 기반 구축 완료
+
+구현 완료:
+
+- 저장소 기본 구조
+- `AGENTS.md`
+- `.codex/config.toml`
+- `.codex/rules/lifeops.rules`
+- LifeOps Codex skill scaffold
+- 기본 설정 파일
+  - `config/life_rules.yaml`
+  - `config/schedule_policy.yaml`
+  - `config/blocklist.yaml`
+  - `config/intervention_policy.yaml`
+  - `config/calendar_policy.yaml`
+  - `config/privacy_policy.yaml`
+- SQLite DB 스키마
+- JSONL 이벤트 로그 디렉터리
+- 부팅 브리핑 컨텍스트/프롬프트 생성
+- Windows 로그온 자동 시작 설치/삭제 스크립트
+- watcher/dispatcher 실행 스크립트
+- 기본 CLI
+- Stage 1 테스트
+
+주요 파일:
+
+- `src/lifeops/db.py`
+- `src/lifeops/boot.py`
+- `src/lifeops/cli.py`
+- `scripts/Start-LifeOps.ps1`
+- `scripts/Install-StartupTask.ps1`
+- `scripts/Remove-StartupTask.ps1`
+- `tests/test_stage1_bootstrap.py`
+
+### 감시 범위 단순화 완료
+
+구현 완료:
+
+- Chrome/Steam 범위 정책 문서화
+- `config/app_scope.yaml`
+- `docs/scope_constraints.md`
+- `src/lifeops/app_scope.py`
+- AGENTS에 감시 범위 반영
+- 테스트 추가
+
+핵심 결정:
+
+- 브라우저는 Chrome만 본다.
+- 게임은 Steam을 단일 진입점으로 본다.
+- 개별 게임 exe 목록은 만들지 않는다.
+
+### Stage 2 일부 완료: Chrome/Steam foreground watcher
+
+구현 완료:
+
+- Windows foreground window 감지
+- Chrome/Steam 범위 내 활동만 기록
+- 감시 범위 밖 활동은 제목 저장 없이 무시
+- Chrome 제목/도메인 힌트 기반 위험 활동 분류 골격
+- Steam 및 Steam 하위 foreground 앱을 게임 게이트웨이로 분류
+- 현재 계획 블록과 충돌 시 `intervention_events`에 pending 이벤트 생성
+- 개입 쿨다운 기본 정책
+- Stage 2 활동 테스트 추가
+
+주요 파일:
+
+- `src/lifeops/windows_activity.py`
+- `src/lifeops/activity_watcher.py`
+- `src/lifeops/browser_activity.py`
+- `src/lifeops/policy_engine.py`
+- `src/lifeops/models.py`
+- `tests/test_stage2_activity.py`
+
+현재 watcher는 감지와 기록까지 한다. pending 이벤트를 실제 Codex intervention 창으로 여는 작업은 아직 남아 있다.
+
+### 오퍼레이터 persona 완료
+
+구현 완료:
+
+- `docs/operator_persona.md`
+- 오퍼레이터 이름 `루멘(Lumen)` 정의
+- 기본 성격, 말투, 금지 표현, 상황별 모드 정의
+- AGENTS에서 persona 문서를 먼저 읽도록 연결
+
+## 현재 커밋 흐름
+
+현재 의미 단위 커밋:
+
+1. `a7a6aba Implement LifeOps Stage 1 scaffold`
+2. `8aabb36 Constrain monitoring scope to Chrome and Steam`
+3. `40df891 Implement Chrome and Steam activity watcher`
+4. `5d39086 Define LifeOps operator persona`
+
+앞으로도 기능이 완성될 때마다 의미 단위로 로컬 커밋을 만들고, 사용자가 직접 `git push origin main`을 실행한다.
+
+## 현재 알려진 제한과 주의점
+
+- 현재 Codex desktop shell에서는 외부 네트워크가 막혀 있어 `git push`가 실패한다. 사용자가 PowerShell에서 직접 push한다.
+- 현재 Codex shell에서는 `python`, `python3`, `py`가 발견되지 않아 유닛 테스트를 직접 실행하지 못했다.
+- 사용자의 일반 PowerShell에서는 Python이 잡힐 수 있으므로 테스트 실행은 사용자 환경에서 재확인해야 한다.
+- `.agents`와 `.codex` 내부 일부 파일은 Windows ACL 때문에 Codex shell에서 직접 수정이 거부될 수 있다. 루트 `AGENTS.md`와 `docs/operator_persona.md`를 우선 기준으로 둔다.
+- `스펙 시트.txt`, 로컬 DB, 이벤트 로그, runtime 파일은 민감하거나 로컬 상태 파일이므로 Git에 올리지 않는다.
+
+## 다음 작업 목록
+
+### 1. Stage 2-B: pending intervention dispatcher 완성
+
+목표:
+
+pending 상태의 `intervention_events`를 읽고 Codex intervention prompt를 생성한 뒤, Codex 창을 열어 루멘이 사용자에게 개입하도록 만든다.
+
+해야 할 일:
+
+- pending event 조회 로직 확장
+- activity event + schedule block을 합쳐 intervention prompt 생성
+- `prompts/intervention_prompt.md` 템플릿 실제 사용
+- 생성된 prompt를 `data/exports/intervention_prompt_<id>.md`에 저장
+- Windows Terminal 또는 Codex CLI로 intervention 세션 실행
+- 실행 후 event status를 `dispatched`로 변경
+- 실패 시 status를 유지하고 runtime log에 기록
+- dispatcher 테스트 추가
+
+완료 기준:
+
+- watcher가 만든 pending event를 dispatcher가 찾아 prompt를 만든다.
+- 실제 Codex intervention 창 실행 경로가 스크립트로 연결된다.
+- 중복 dispatch가 발생하지 않는다.
+
+### 2. Stage 2-C: decision logging UX 정리
+
+목표:
+
+사용자가 개입에 응답했을 때 선택지를 안정적으로 DB에 기록하고, 이후 복구/예외 흐름의 근거로 쓸 수 있게 한다.
+
+해야 할 일:
+
+- `record-decision` CLI를 선택지 코드 중심으로 정리
+- 선택지 순서와 category를 persona 문서와 맞춤
+- false positive, intentional rest, fatigue, health, overload, schedule change를 명확히 분리
+- decision 기록 후 event status 전환 규칙 정리
+- decision JSONL 또는 daily summary 반영
+
+완료 기준:
+
+- 사용자의 선택 하나로 DB 상태가 일관되게 바뀐다.
+- 판단/훈계 문구 없이 기록된다.
+
+### 3. Stage 2-D: 실제 부팅/로그온 동작 점검
+
+목표:
+
+Windows 로그인 후 Start-LifeOps가 watcher, dispatcher, Codex boot briefing을 안정적으로 실행하는지 확인한다.
+
+해야 할 일:
+
+- `Install-StartupTask.ps1` 실제 등록 테스트
+- task scheduler 동작 확인
+- watcher/dispatcher pid 파일 확인
+- boot prompt 생성 확인
+- Codex CLI 실행 경로 확인
+- 로그 파일 회전 또는 크기 제한 검토
+
+완료 기준:
+
+- 사용자가 직접 실행하지 않아도 로그인 후 LifeOps가 시작된다.
+- 실패 시 원인을 `data/runtime/startup.log`에서 확인할 수 있다.
+
+### 4. Stage 3-A: recovery mode 실사용화
+
+목표:
+
+반복 이탈, 피로, 과부하 상황에서 남은 하루 계획을 자동으로 축소하고 다음 3-5분 행동만 남긴다.
+
+해야 할 일:
+
+- recovery session 기록 확장
+- 현재 계획 블록과 남은 task를 축소 계획으로 변환
+- 수면, 식사, 복약, 위생, 고정 일정 보호
+- recovery prompt 생성
+- recovery decision 기록
+
+완료 기준:
+
+- 사용자가 회복 모드를 선택하면 남은 하루가 작게 재구성된다.
+- 죄책감/벌칙 없이 다음 행동이 생성된다.
+
+### 5. Stage 3-B: daily summary와 weekly review
+
+목표:
+
+일일 요약과 주간 패턴 분석을 통해 시스템 조정 제안을 최대 3개만 만든다.
+
+해야 할 일:
+
+- activity/intervention/decision 로그 요약
+- 피로 예외, 복귀 시간, 반복 마찰 지점 집계
+- `codex exec`용 weekly pattern prompt 정리
+- rule proposal 생성
+- 승인 전 자동 적용 금지
+
+완료 기준:
+
+- 매일 짧은 운영 요약이 생성된다.
+- 주간 리뷰에서 시스템 조정 제안이 최대 3개 생성된다.
+
+### 6. Stage 4: Chrome extension과 Native Messaging
+
+목표:
+
+Chrome title 기반 추정을 넘어, Chrome 도메인만 안정적으로 보고하는 확장을 붙인다.
+
+해야 할 일:
+
+- Chrome extension scaffold
+- Native Messaging host
+- 도메인-only reporting
+- page body 수집 금지 검증
+- redirect/friction page
+
+완료 기준:
+
+- Chrome의 현재 도메인을 페이지 본문 없이 안전하게 기록한다.
+- 위험 도메인에서 마찰 또는 redirect가 가능하다.
+
+### 7. Stage 4 후반: calendar 연동
+
+목표:
+
+캘린더 API 또는 ICS export를 통해 일정 블록을 안정적으로 가져오거나 내보낸다.
+
+해야 할 일:
+
+- 우선 ICS export/import 설계
+- Google/Microsoft calendar API는 별도 인증이 필요하므로 후순위
+- schedule_blocks 동기화 규칙
+- 수동 입력과 캘린더 충돌 처리
+
+완료 기준:
+
+- 고정 일정이 DB schedule_blocks에 반영된다.
+- 캘린더 연동은 LLM API와 무관하게 동작한다.
+
+### 8. Stage 5: MCP/tool 고도화
+
+목표:
+
+Codex가 LifeOps 상태를 더 안정적으로 읽고 기록할 수 있는 tool interface를 제공한다.
+
+해야 할 일:
+
+- `lifeops-mcp` 서버 구체화
+- get_current_block, get_pending_events, record_decision tool화
+- rule proposal 승인 workflow
+- 상태 변경 audit log
+
+완료 기준:
+
+- Codex가 DB를 직접 SQL로 만지는 대신 안정된 도구를 통해 상태를 읽고 쓴다.
+
+## 다음 세션의 첫 권장 작업
+
+가장 먼저 할 일은 Stage 2-B다.
+
+시작 순서:
+
+1. `src/lifeops/event_dispatcher.py` 확인
+2. `src/lifeops/codex_bridge.py` 확장
+3. pending event를 intervention prompt markdown으로 렌더링
+4. dispatcher가 prompt 생성 후 event status를 `dispatched`로 바꾸도록 구현
+5. 중복 실행 방지 테스트 작성
+6. 로컬 커밋: `Implement intervention dispatcher`
+
+이 작업이 끝나면 Chrome/Steam 감지 -> pending event -> Codex intervention 창 실행까지 Stage 2의 핵심 루프가 이어진다.

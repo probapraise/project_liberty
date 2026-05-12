@@ -26,6 +26,8 @@ LifeOps Codex Operator는 Codex CLI/Codex app을 생활 운영 보조자로 사�
 
 Codex intervention 창 실행은 다음 Stage 2 작업으로 남아 있다.
 
+현재 상태와 다음 작업 목록은 [current_status_and_roadmap.md](docs/current_status_and_roadmap.md)를 기준으로 한다.
+
 ## 수동 1회 시작
 
 PowerShell에서 저장소 루트로 이동한 뒤 실행한다.
