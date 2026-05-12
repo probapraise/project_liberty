@@ -48,6 +48,18 @@ powershell -NoProfile -ExecutionPolicy Bypass -File .\scripts\Test-StartupFlow.p
 
 이 스크립트는 DB 초기화, boot context/prompt 생성, watcher 1회 실행, dispatcher dry-run 1회 실행, Codex CLI/예약 작업 확인 결과를 `data/runtime/startup_check.json`에 남긴다.
 
+Intervention loop 전체를 안전하게 확인하려면 아래 명령을 실행한다. 테스트용 Steam 활동 이벤트를 만들고, prompt를 생성한 뒤 `return_now` 결정으로 닫는다.
+
+```powershell
+pwsh -NoProfile -ExecutionPolicy Bypass -File .\scripts\Test-InterventionLoop.ps1
+```
+
+예외 생성 경로까지 확인하려면 1분짜리 의도적 휴식 예외로 닫을 수 있다.
+
+```powershell
+pwsh -NoProfile -ExecutionPolicy Bypass -File .\scripts\Test-InterventionLoop.ps1 -Choice intentional_rest -DurationMinutes 1
+```
+
 `codex_cli` 경고가 뜨면 Codex CLI 경로를 환경변수로 고정할 수 있다.
 
 ```powershell
